@@ -1,0 +1,1 @@
+This repository, `poetiq-arc-agi-solver`, contains the code that allows for the reproduction of Poetiq's submissions to the ARC-AGI-1 and ARC-AGI-2 benchmarks.

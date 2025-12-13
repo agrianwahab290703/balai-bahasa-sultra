@@ -1,0 +1,363 @@
+@import 'tailwindcss';
+@import './cross-platform.css';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source '../**/*.jsx';
+@source '../**/*.ts';
+@source '../**/*.tsx';
+
+@theme {
+    /* Typography - Human touch with font variety */
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    
+    /* Shadcn UI CSS Variables */
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.205 0 0);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --radius: 0.625rem;
+}
+
+/* Custom utility classes for human touch */
+@layer utilities {
+    .font-display {
+        font-family: var(--font-display);
+    }
+    
+    /* Sticky header utilities */
+    .sticky-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 100;
+    }
+    
+    .header-transition {
+        transition: all 0.3s ease-in-out;
+    }
+    
+    .header-hidden {
+        transform: translateY(-100%);
+    }
+    
+    .header-visible {
+        transform: translateY(0);
+    }
+    
+    /* Text balance for natural reading */
+    .text-balance {
+        text-wrap: balance;
+    }
+    
+    /* Subtle text shadow for depth */
+    .text-shadow-subtle {
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    /* Decorative underline */
+    .underline-wavy {
+        text-decoration: underline wavy;
+        text-underline-offset: 4px;
+    }
+    
+    /* Gradient text */
+    .text-gradient-primary {
+        background: linear-gradient(135deg, #1e6091 0%, #2980b9 50%, #1e6091 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    /* Handwritten feel */
+    .rotate-subtle {
+        transform: rotate(-1deg);
+    }
+    
+    .rotate-subtle-right {
+        transform: rotate(1deg);
+    }
+    
+    /* Organic shapes */
+    .blob-shape {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+    
+    /* Hide scrollbar but keep functionality */
+    .scrollbar-hide {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;  /* Chrome, Safari and Opera */
+    }
+    
+    /* Animation delays for staggered effects */
+    .animation-delay-100 { animation-delay: 100ms; }
+    .animation-delay-200 { animation-delay: 200ms; }
+    .animation-delay-300 { animation-delay: 300ms; }
+    .animation-delay-400 { animation-delay: 400ms; }
+    .animation-delay-500 { animation-delay: 500ms; }
+}
+
+/* Custom animations */
+@layer utilities {
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    @keyframes pulse-subtle {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+    
+    @keyframes wiggle {
+        0%, 100% { transform: rotate(-2deg); }
+        50% { transform: rotate(2deg); }
+    }
+    
+    @keyframes accordion-down {
+        from { height: 0; }
+        to { height: var(--radix-accordion-content-height); }
+    }
+    
+    @keyframes accordion-up {
+        from { height: var(--radix-accordion-content-height); }
+        to { height: 0; }
+    }
+    
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slide-in-right {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    
+    @keyframes bounce-subtle {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    .animate-pulse-subtle {
+        animation: pulse-subtle 2s ease-in-out infinite;
+    }
+    
+    .animate-wiggle {
+        animation: wiggle 0.5s ease-in-out;
+    }
+    
+    .hover\:animate-wiggle:hover {
+        animation: wiggle 0.5s ease-in-out;
+    }
+    
+    .animate-accordion-down {
+        animation: accordion-down 0.2s ease-out;
+    }
+    
+    .animate-accordion-up {
+        animation: accordion-up 0.2s ease-out;
+    }
+    
+    .animate-fade-in {
+        animation: fade-in 0.5s ease-out forwards;
+    }
+    
+    .animate-slide-in-right {
+        animation: slide-in-right 0.4s ease-out forwards;
+    }
+    
+    .animate-bounce-subtle {
+        animation: bounce-subtle 2s ease-in-out infinite;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print,
+    header,
+    footer,
+    nav,
+    aside,
+    .sticky,
+    [class*="sticky"],
+    button:not(.print-show),
+    .share-buttons,
+    .social-share {
+        display: none !important;
+    }
+    
+    body {
+        font-size: 11pt;
+        line-height: 1.6;
+        color: #000;
+        background: #fff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    main {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    .container {
+        max-width: 100%;
+        padding: 0 20px;
+    }
+    
+    a {
+        text-decoration: none;
+        color: #000;
+    }
+    
+    a[href]:after {
+        content: none !important;
+    }
+    
+    .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+        box-shadow: none !important;
+    }
+    
+    /* Force page breaks */
+    section {
+        page-break-inside: avoid;
+    }
+    
+    h1, h2, h3 {
+        page-break-after: avoid;
+    }
+    
+    img {
+        page-break-inside: avoid;
+        max-width: 100% !important;
+    }
+    
+    /* News article print styling */
+    article {
+        margin: 0;
+        padding: 0;
+    }
+    
+    article .prose {
+        max-width: 100%;
+        font-size: 11pt;
+    }
+    
+    article .prose img {
+        max-width: 80% !important;
+        margin: 1rem auto;
+        display: block;
+    }
+    
+    /* Print header for news articles */
+    .print-header {
+        display: block !important;
+        border-bottom: 2px solid #000;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* URL display on print */
+    @page {
+        margin: 2cm;
+        @bottom-center {
+            content: "Balai Bahasa Provinsi Sulawesi Tenggara";
+        }
+    }
+}
+
+/* Skeleton Loading Animation */
+@layer utilities {
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+    }
+}
+
+/* Embla Carousel Smooth Transitions */
+@layer components {
+    /* Carousel container with smooth scroll behavior */
+    .embla__container {
+        display: flex;
+        will-change: transform;
+    }
+    
+    /* Carousel slide with smooth transitions */
+    .embla__slide {
+        position: relative;
+        flex: 0 0 100%;
+        min-width: 0;
+    }
+    
+    /* Smooth transition for carousel slides */
+    [role="region"][aria-roledescription="carousel"] {
+        /* Enable GPU acceleration for smoother animations */
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        perspective: 1000px;
+    }
+    
+    /* Carousel slide transition effects */
+    [role="group"][aria-roledescription="slide"] {
+        transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        will-change: opacity, transform;
+    }
+    
+    /* Fade effect for slides during transition */
+    [role="group"][aria-roledescription="slide"]:not(:first-child) {
+        opacity: 1;
+    }
+    
+    /* Smooth scrolling for carousel container */
+    .overflow-hidden > .flex {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Enhanced button transitions for carousel navigation */
+    [aria-roledescription="carousel"] button {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    [aria-roledescription="carousel"] button:hover {
+        transform: scale(1.1);
+    }
+    
+    [aria-roledescription="carousel"] button:active {
+        transform: scale(0.95);
+    }
+}

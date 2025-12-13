@@ -1,0 +1,30 @@
+# Daftar URL Berita yang Akan Di-scraping
+
+## URL Berita yang Ditemukan di Halaman Utama:
+1. https://balaibahasasultra.kemendikdasmen.go.id/kemendikdasmen-apresiasi-unit-kerja-berintegritas-melalui-penghargaan-zi-wbk-wbbm-dan-pelayanan-prima/
+2. https://balaibahasultra.kemendikdasmen.go.id/bbp-sultra-menerima-penghargaan-zi-wbk-dan-pekppp-mandiri-kemendikdasmen/
+3. https://balaibahasultra.kemendikdasmen.go.id/apel-pagi-16/
+4. https://balaibahasultra.kemendikdasmen.go.id/bimtek-penguatan-penggunaan-bahasa-indonesia-bagi-pegawai-rri/
+5. https://balaibahasultra.kemendikdasmen.go.id/apel-pagi-15/
+6. https://balaibahasultra.kemendikdasmen.go.id/5145-2/ (KEMENDIKDASMEN GELAR PELATIHAN KEMAHIRAN BERBAHASA INDONESIA BAGI GURU BIPA DARI 11 NEGARA)
+7. https://balaibahasultra.kemendikdasmen.go.id/kemendikdasmen-ajak-pemerintah-daerah-yogyakarta-bersinergi-menegakkan-ketertiban-bahasa-indonesia/
+8. https://balaibahasultra.kemendikdasmen.go.id/5119-2/ (MENILIK SEJARAH BAHASA INDONESIA MENJADI BAHASA RESMI DI SIDANG UMUM UNESCO)
+9. https://balaibahasultra.kemendikdasmen.go.id/kemendikdasmen-dukung-pengajuan-aksara-daerah-ke-unesco-lewat-peta-kebinekaan-dan-digitalisasi-unicode/
+10. https://balaibahasultra.kemendikdasmen.go.id/indonesia-tegaskan-peran-global-pada-sidang-umum-unesco-ke-43/
+11. https://balaibahasultra.kemendikdasmen.go.id/bbp-sultra-terima-penghargaan-dari-bank-indonesia/
+12. https://balaibahasultra.kemendikdasmen.go.id/pojok-baca-bbp-sultra-dalam-kegiatan-mobasa-expo/
+13. https://balaibahasultra.kemendikdasmen.go.id/5119-2/
+
+## Prioritas Crawling (dari terbaru ke terlama):
+1. Kemendikdasmen Apresiasi Unit Kerja Berintegritas (Dec 10, 2025)
+2. BBP Sultra Menerima Penghargaan ZI WBK dan PEKPPP Mandiri (Dec 10, 2025)
+3. Apel Pagi (Dec 9, 2025)
+4. BIMTEK Penguatan Penggunaan Bahasa Indonesia (Dec 3, 2025)
+5. KEMENDIKDASMEN Gelar Pelatihan Kemahiran Berbahasa Indonesia (Dec 1, 2025)
+6. Indonesia Menegaskan Peran Global di UNESCO ke-43 (Dec 1, 2025)
+7. BBP Sultra Terima Penghargaan dari Bank Indonesia (Dec 1, 2025)
+8. Pojok Baca BBP Sultra di Mobasa Expo (Dec 1, 2025)
+
+## Total Berita: 13 artikel
+## Date Range: Desember 1-10, 2025
+## Target Crawling: Semua link diatas

@@ -1,0 +1,42 @@
+# G3 Configuration for Balai Bahasa Sultra Project
+[agent]
+max_context_length = 8192
+enable_streaming = true
+timeout_seconds = 60
+max_retry_attempts = 3
+autonomous_max_retry_attempts = 6
+
+# Laravel-specific settings
+project_context = """
+Laravel 12.0 project for Balai Bahasa Sulawesi Tenggara.
+- PHP 8.2+ required
+- Inertia.js with React 19.2 frontend
+- Tailwind CSS 4.0 for styling
+- TypeScript throughout
+- PPID forms with multi-step validation
+- ZI-WBK compliance documentation
+- Bilingual Indonesian-English content
+"""
+
+[providers.anthropic]
+enabled = true
+api_key = "your-anthropic-api-key"
+model = "claude-3-sonnet-20240229"
+max_tokens = 4096
+
+[computer_control]
+enabled = false  # Enable for desktop automation if needed
+
+[macax]
+enabled = false  # macOS Accessibility API if needed
+
+[webdriver]
+enabled = false  # Browser automation if needed
+
+# Custom tools configuration for Laravel
+[tools.laravel]
+artisan_path = "./artisan"
+migration_path = "./database/migrations"
+controller_path = "./app/Http/Controllers"
+model_path = "./app/Models"
+view_path = "./resources/js"

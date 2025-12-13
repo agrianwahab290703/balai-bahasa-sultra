@@ -1,0 +1,11 @@
+{
+  "crawling_session": {
+    "started_at": "2025-12-12T02:53:00Z",
+    "target_url": "https://balaibahasultra.kemendikdasmen.go.id/berita-kegiatan/",
+    "total_articles_found": 13,
+    "successfully_scraped": 0,
+    "failed_urls": [],
+    "images_downloaded": 0
+  },
+  "articles": []
+}
