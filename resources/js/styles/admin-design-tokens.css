@@ -1,0 +1,29 @@
+/* resources/js/styles/admin-design-tokens.css */
+
+:root {
+  /* Primary Colors */
+  --admin-primary-blue: #2563eb;
+  --admin-accent-yellow: #FFD700;
+  --admin-white: #ffffff;
+  
+  /* Semantic Colors */
+  --admin-success: #10b981;
+  --admin-warning: #f59e0b;
+  --admin-error: #ef4444;
+  --admin-info: #3b82f6;
+  
+  /* Gradients */
+  --admin-gradient-sidebar: linear-gradient(180deg, #2563eb 0%, #3b82f6 25%, #ffffff 50%, #fef3c7 75%, #FFD700 100%);
+  --admin-gradient-button: linear-gradient(90deg, #2563eb 0%, #ffffff 50%, #FFD700 100%);
+  --admin-gradient-card: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 215, 0, 0.1) 100%);
+  
+  /* Glassmorphism */
+  --admin-glass-bg: rgba(255, 255, 255, 0.8);
+  --admin-glass-border: rgba(37, 99, 235, 0.1);
+  --admin-glass-shadow: 0 8px 32px rgba(37, 99, 235, 0.1);
+  
+  /* Animation */
+  --admin-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --admin-transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --admin-transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
