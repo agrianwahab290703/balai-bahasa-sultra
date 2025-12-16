@@ -195,28 +195,28 @@ class BeritaController extends Controller
     /**
      * Display the specified news article.
      */
-    public function show(Berita $beritum): Response
+    public function show(Berita $berita): Response
     {
-        $beritum->load('galeriFotoBerita');
-        
+        $berita->load('galeriFotoBerita');
+
         return Inertia::render('Admin/Berita/Show', [
-            'berita' => $beritum,
+            'berita' => $berita,
         ]);
     }
 
     /**
      * Show the form for editing the specified news article.
      * Loads existing data including gallery images.
-     * 
+     *
      * @see Requirements 1.7
      */
-    public function edit(Berita $beritum): Response
+    public function edit(Berita $berita): Response
     {
-        $beritum->load('galeriFotoBerita');
+        $berita->load('galeriFotoBerita');
         $categories = Berita::distinct()->pluck('kategori')->filter()->values();
-        
+
         return Inertia::render('Admin/Berita/Edit', [
-            'berita' => $beritum,
+            'berita' => $berita,
             'categories' => $categories,
         ]);
     }
@@ -224,10 +224,10 @@ class BeritaController extends Controller
     /**
      * Update the specified news article.
      * Logs changes for audit trail.
-     * 
+     *
      * @see Requirements 1.7
      */
-    public function update(Request $request, Berita $beritum): RedirectResponse
+    public function update(Request $request, Berita $berita): RedirectResponse
     {
         $validated = $request->validate([
             'judul_utama' => 'required|string|max:255',
@@ -245,14 +245,14 @@ class BeritaController extends Controller
         ]);
 
         // Store old values for activity logging
-        $oldValues = $beritum->getAttributes();
+        $oldValues = $berita->getAttributes();
 
         // Regenerate slug if title changed
-        if ($validated['judul_utama'] !== $beritum->judul_utama) {
+        if ($validated['judul_utama'] !== $berita->judul_utama) {
             $validated['slug'] = SlugGenerator::generateUnique(
                 $validated['judul_utama'],
                 Berita::class,
-                $beritum->id
+                $berita->id
             );
         }
 
@@ -264,15 +264,15 @@ class BeritaController extends Controller
             }
         }
 
-        $beritum->update($validated);
+        $berita->update($validated);
 
         // Log activity with changes
-        $this->activityLogger->logUpdated($beritum, $oldValues);
+        $this->activityLogger->logUpdated($berita, $oldValues);
 
         // Clear berita cache including specific article cache
         $this->clearBeritaCache();
-        Cache::forget("berita_show_{$beritum->slug}");
-        Cache::forget("berita_related_{$beritum->id}");
+        Cache::forget("berita_show_{$berita->slug}");
+        Cache::forget("berita_related_{$berita->id}");
 
         return redirect()->route('admin.berita.index')
             ->with('success', 'Berita berhasil diperbarui');
@@ -281,16 +281,16 @@ class BeritaController extends Controller
     /**
      * Soft delete the specified news article.
      */
-    public function destroy(Berita $beritum): RedirectResponse
+    public function destroy(Berita $berita): RedirectResponse
     {
         // Store slug before deletion for cache clearing
-        $slug = $beritum->slug;
-        $id = $beritum->id;
-        
+        $slug = $berita->slug;
+        $id = $berita->id;
+
         // Log activity before deletion
-        $this->activityLogger->logDeleted($beritum);
-        
-        $beritum->delete();
+        $this->activityLogger->logDeleted($berita);
+
+        $berita->delete();
 
         // Clear berita cache including specific article cache
         $this->clearBeritaCache();

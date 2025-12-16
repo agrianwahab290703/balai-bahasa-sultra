@@ -52,10 +52,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [BeritaController::class, 'index'])->name('index');
             Route::get('/create', [BeritaController::class, 'create'])->name('create');
             Route::post('/', [BeritaController::class, 'store'])->name('store');
-            Route::get('/{beritum}', [BeritaController::class, 'show'])->name('show');
-            Route::get('/{beritum}/edit', [BeritaController::class, 'edit'])->name('edit');
-            Route::put('/{beritum}', [BeritaController::class, 'update'])->name('update');
-            Route::delete('/{beritum}', [BeritaController::class, 'destroy'])->name('destroy');
+            Route::get('/{berita}', [BeritaController::class, 'show'])->name('show');
+            Route::get('/{berita}/edit', [BeritaController::class, 'edit'])->name('edit');
+            Route::put('/{berita}', [BeritaController::class, 'update'])->name('update');
+            Route::delete('/{berita}', [BeritaController::class, 'destroy'])->name('destroy');
             Route::post('/bulk-action', [BeritaController::class, 'bulkAction'])->name('bulk-action');
         });
 
