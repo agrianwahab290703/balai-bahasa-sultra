@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasActivityLog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PpidDocument extends Model
 {
-    use HasFactory;
+    use HasFactory, HasActivityLog;
 
     protected $fillable = [
         'title',
@@ -25,6 +26,11 @@ class PpidDocument extends Model
         'download_count' => 'integer',
     ];
 
+    /**
+     * Attributes to append to JSON/array output
+     */
+    protected $appends = ['file_size_formatted', 'file_url'];
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -35,8 +41,29 @@ class PpidDocument extends Model
         return $query->where('category', $category);
     }
 
-    public function getFileSizeAttribute($value)
+    /**
+     * Get formatted file size for display
+     */
+    public function getFileSizeFormattedAttribute(): string
     {
-        return number_format($value / 1024, 2) . ' KB';
+        $bytes = $this->attributes['file_size'] ?? 0;
+        
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 2) . ' MB';
+        }
+        
+        return number_format($bytes / 1024, 2) . ' KB';
+    }
+
+    /**
+     * Get the full URL to the file
+     */
+    public function getFileUrlAttribute(): ?string
+    {
+        if (!$this->file_path) {
+            return null;
+        }
+        
+        return asset('storage/' . $this->file_path);
     }
 }

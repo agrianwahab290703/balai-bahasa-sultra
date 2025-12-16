@@ -104,7 +104,7 @@ export default function BeritaIndex({ berita, featuredNews = [], popularNews = [
     // Get the featured/hero news item (most recent with image)
     const heroNews = useMemo(() => {
         if (featuredNews.length > 0) return featuredNews[0];
-        return filteredNews.find(n => n.featured_image) || filteredNews[0];
+        return filteredNews.find(n => n.hero_image) || filteredNews[0];
     }, [filteredNews, featuredNews]);
 
     // Get remaining news (excluding hero)

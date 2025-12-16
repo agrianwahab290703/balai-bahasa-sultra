@@ -12,7 +12,8 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'admin/login',
-        'admin/logout',
+        // Don't exempt admin routes - Inertia.js handles CSRF automatically
+        // 'admin/login',
+        // 'admin/logout',
     ];
 }

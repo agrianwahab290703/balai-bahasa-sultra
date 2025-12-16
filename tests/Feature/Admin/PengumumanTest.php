@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\User;
+use App\Models\AdminUser;
 use App\Models\Pengumuman;
 use App\Http\Middleware\AdminAuthMiddleware;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,16 +22,16 @@ class PengumumanTest extends TestCase
 
     public function test_pengumuman_index_can_be_rendered()
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = AdminUser::factory()->admin()->create();
         Pengumuman::factory()->count(5)->create();
         
-        $response = $this->actingAs($admin)->get('/admin/pengumuman');
+        $response = $this->actingAs($admin, 'admin')->get('/admin/pengumuman');
         $response->assertStatus(200);
     }
 
     public function test_can_create_pengumuman()
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = AdminUser::factory()->admin()->create();
         $data = [
             'judul' => 'Test Pengumuman',
             'konten' => 'Ini adalah konten test',
@@ -39,7 +39,7 @@ class PengumumanTest extends TestCase
             'status' => 'active',
         ];
         
-        $response = $this->actingAs($admin)
+        $response = $this->actingAs($admin, 'admin')
                         ->withSession(['_token' => 'test-token'])
                         ->post('/admin/pengumuman', array_merge($data, ['_token' => 'test-token']));
         $response->assertRedirect('/admin/pengumuman');

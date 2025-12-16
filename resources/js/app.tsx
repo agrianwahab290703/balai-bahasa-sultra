@@ -4,8 +4,11 @@ import { createRoot } from 'react-dom/client';
 
 createInertiaApp({
     resolve: (name) => {
-        const pages = import.meta.glob(['./Pages/**/*.tsx', '!**/*.test.tsx', '!**/*.spec.tsx'], { eager: true });
-        return pages[`./Pages/${name}.tsx`];
+        const tsxPages = import.meta.glob(['./Pages/**/*.tsx', '!**/*.test.tsx', '!**/*.spec.tsx'], { eager: true });
+        const jsxPages = import.meta.glob(['./Pages/**/*.jsx'], { eager: true });
+        
+        // Try .tsx first, then .jsx
+        return tsxPages[`./Pages/${name}.tsx`] || jsxPages[`./Pages/${name}.jsx`];
     },
     setup({ el, App, props }) {
         const root = createRoot(el);

@@ -2,30 +2,130 @@
 
 namespace App\Models;
 
+use App\Traits\HasActivityLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Gallery extends Model
 {
-    use HasFactory;
+    use HasFactory, HasActivityLog, SoftDeletes;
+
+    /**
+     * Maximum number of featured items allowed.
+     * @see Requirements 2.5
+     */
+    public const MAX_FEATURED_ITEMS = 6;
 
     protected $fillable = [
+        'name',
+        'slug',
         'title',
         'description',
         'image',
+        'thumbnail',
         'category',
         'is_featured',
+        'is_active',
         'sort_order',
+        'user_id',
     ];
 
     protected $casts = [
         'is_featured' => 'boolean',
+        'is_active' => 'boolean',
+        'sort_order' => 'integer',
     ];
 
-    protected $appends = ['date'];
+    protected $appends = ['date', 'image_url', 'thumbnail_url'];
 
-    public function getDateAttribute()
+    protected $attributes = [
+        'is_featured' => false,
+        'is_active' => true,
+        'sort_order' => 0,
+    ];
+
+    public function getDateAttribute(): string
     {
-        return $this->created_at->format('d M Y');
+        return $this->created_at?->format('d M Y') ?? '';
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!$this->image) {
+            return null;
+        }
+        
+        if (str_starts_with($this->image, 'http')) {
+            return $this->image;
+        }
+        
+        return asset('storage/' . $this->image);
+    }
+
+    public function getThumbnailUrlAttribute(): ?string
+    {
+        if ($this->thumbnail) {
+            if (str_starts_with($this->thumbnail, 'http')) {
+                return $this->thumbnail;
+            }
+            return asset('storage/' . $this->thumbnail);
+        }
+        
+        return $this->image_url;
+    }
+
+    /**
+     * Scope to get only active galleries.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope to get only featured galleries.
+     */
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scope to order by sort_order.
+     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order', 'asc');
+    }
+
+    /**
+     * Get the count of currently featured items.
+     */
+    public static function featuredCount(): int
+    {
+        return static::where('is_featured', true)->count();
+    }
+
+    /**
+     * Check if more items can be featured.
+     */
+    public static function canFeatureMore(): bool
+    {
+        return static::featuredCount() < static::MAX_FEATURED_ITEMS;
+    }
+
+    /**
+     * Get predefined categories.
+     */
+    public static function categories(): array
+    {
+        return [
+            'kegiatan' => 'Kegiatan',
+            'acara' => 'Acara',
+            'dokumentasi' => 'Dokumentasi',
+            'penghargaan' => 'Penghargaan',
+            'lainnya' => 'Lainnya',
+        ];
     }
 }

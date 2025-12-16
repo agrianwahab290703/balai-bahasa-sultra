@@ -4,32 +4,24 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pengumuman;
+use App\Services\PengumumanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class PengumumanController extends Controller
 {
+    protected PengumumanService $pengumumanService;
+
+    public function __construct(PengumumanService $pengumumanService)
+    {
+        $this->pengumumanService = $pengumumanService;
+    }
+
     public function index(Request $request)
     {
-        $query = Pengumuman::query();
-        
-        if ($request->filled('search')) {
-            $query->where('judul', 'like', '%' . $request->search . '%')
-                  ->orWhere('konten', 'like', '%' . $request->search . '%');
-        }
-        
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        
-        if ($request->filled('tipe')) {
-            $query->where('tipe', $request->tipe);
-        }
-        
-        $pengumuman = $query->orderBy('prioritas', 'desc')
-                           ->orderBy('created_at', 'desc')
-                           ->paginate(10);
+        $filters = $request->only(['search', 'status', 'tipe']);
+        $pengumuman = $this->pengumumanService->getAll($filters);
         
         return inertia('Admin/Pengumuman/Index', compact('pengumuman'));
     }
@@ -51,10 +43,7 @@ class PengumumanController extends Controller
             'meta_description' => 'nullable|string|max:255',
         ]);
 
-        $validated['slug'] = Str::slug($validated['judul']);
-        $validated['created_by'] = Auth::id();
-        
-        Pengumuman::create($validated);
+        $this->pengumumanService->create($validated);
         
         return redirect()->route('admin.pengumuman.index')
                     ->with('success', 'Pengumuman berhasil ditambahkan');
@@ -82,10 +71,7 @@ class PengumumanController extends Controller
             'meta_description' => 'nullable|string|max:255',
         ]);
 
-        $validated['slug'] = Str::slug($validated['judul']);
-        $validated['updated_by'] = Auth::id();
-        
-        $pengumuman->update($validated);
+        $this->pengumumanService->update($pengumuman->id, $validated);
         
         return redirect()->route('admin.pengumuman.index')
                     ->with('success', 'Pengumuman berhasil diperbarui');
@@ -93,7 +79,7 @@ class PengumumanController extends Controller
 
     public function destroy(Pengumuman $pengumuman)
     {
-        $pengumuman->delete();
+        $this->pengumumanService->delete($pengumuman->id);
         
         return redirect()->route('admin.pengumuman.index')
                     ->with('success', 'Pengumuman berhasil dihapus');
@@ -107,23 +93,15 @@ class PengumumanController extends Controller
             'pengumuman_ids.*' => 'exists:pengumuman,id',
         ]);
 
-        $pengumuman = Pengumuman::whereIn('id', $validated['pengumuman_ids']);
+        $this->pengumumanService->bulkAction($validated['pengumuman_ids'], $validated['action']);
 
-        switch ($validated['action']) {
-            case 'publish':
-                $pengumuman->update(['status' => 'active']);
-                $message = 'Pengumuman berhasil dipublish';
-                break;
-            case 'unpublish':
-                $pengumuman->update(['status' => 'draft']);
-                $message = 'Pengumuman berhasil diunpublish';
-                break;
-            case 'delete':
-                $pengumuman->delete();
-                $message = 'Pengumuman berhasil dihapus';
-                break;
-        }
-
+        $messages = [
+            'publish' => 'Pengumuman berhasil dipublish',
+            'unpublish' => 'Pengumuman berhasil diunpublish',
+            'delete' => 'Pengumuman berhasil dihapus',
+        ];
+        $message = $messages[$validated['action']];
+        
         return redirect()->route('admin.pengumuman.index')
                     ->with('success', $message);
     }

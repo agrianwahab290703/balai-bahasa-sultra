@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\AdminUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -22,16 +22,26 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
+        // Use admin guard with AdminUser model
+        if (Auth::guard('admin')->attempt($credentials)) {
+            $user = Auth::guard('admin')->user();
             
-            $user = Auth::user();
-            if (in_array($user->role, ['admin', 'super_admin'])) {
+            // Check if user is active - block deactivated users
+            if (!$user->is_active) {
+                Auth::guard('admin')->logout();
+                return back()->withErrors([
+                    'email' => 'Akun Anda telah dinonaktifkan. Hubungi administrator.',
+                ]);
+            }
+            
+            // Check if user has valid admin role
+            if (in_array($user->role, [AdminUser::ROLE_ADMIN, AdminUser::ROLE_SUPER_ADMIN])) {
+                $request->session()->regenerate();
                 $user->update(['last_login_at' => now()]);
                 return redirect()->intended('/admin/dashboard');
             }
             
-            Auth::logout();
+            Auth::guard('admin')->logout();
             return back()->withErrors([
                 'email' => 'Anda tidak memiliki akses admin.',
             ]);
@@ -44,7 +54,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard('admin')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect('/admin/login');

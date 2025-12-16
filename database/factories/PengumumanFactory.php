@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
+use App\Models\AdminUser;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -26,7 +26,7 @@ class PengumumanFactory extends Factory
             'status' => 'draft',
             'prioritas' => fake()->numberBetween(0, 5),
             'meta_description' => fake()->sentence(),
-            'created_by' => User::factory()->create()->id, // Create user and get ID as string
+            'created_by' => AdminUser::factory()->create()->id,
         ];
     }
 }

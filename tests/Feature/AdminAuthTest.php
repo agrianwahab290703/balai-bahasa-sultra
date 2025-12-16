@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Models\AdminUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Http\Middleware\AdminAuthMiddleware;
@@ -27,7 +27,10 @@ class AdminAuthTest extends TestCase
 
     public function test_admin_can_login_with_valid_credentials()
     {
-        $admin = User::factory()->create(['role' => 'admin']);
+        $admin = AdminUser::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
         $response = $this->withSession(['_token' => 'test-token'])
                          ->post('/admin/login', [
             'email' => $admin->email,

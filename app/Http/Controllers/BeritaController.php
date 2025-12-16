@@ -25,7 +25,9 @@ class BeritaController extends Controller
         $page = $request->get('page', 1);
 
         // Cache for 30 minutes
-        $cacheKey = "berita_index_{$category}_{$search}_{$page}";
+        // Use consistent cache key pattern that aligns with CacheService
+        // Requirements: 9.1, 9.2, 9.3 - Ensure only published berita are shown
+        $cacheKey = \App\Services\CacheService::BERITA_INDEX_PREFIX . "{$category}_{$search}_{$page}";
 
         $berita = Cache::remember($cacheKey, 1800, function () use ($search, $category) {
             $query = Berita::published()
@@ -76,10 +78,12 @@ class BeritaController extends Controller
      */
     public function show(string $slug): Response
     {
-        $cacheKey = "berita_show_{$slug}";
+        // Use consistent cache key pattern that aligns with CacheService
+        $cacheKey = \App\Services\CacheService::BERITA_SHOW_PREFIX . $slug;
 
         $berita = Cache::remember($cacheKey, 1800, function () use ($slug) {
-            $berita = Berita::published()
+            // Requirements: 9.1, 9.3 - Only published berita should be accessible
+            return Berita::published()
                 ->with([
                     'galeriFotoBerita' => function ($query) {
                         $query->orderBy('urutan');
@@ -87,15 +91,14 @@ class BeritaController extends Controller
                 ])
                 ->where('slug', $slug)
                 ->firstOrFail();
-
-            // Increment view count (but don't cache this)
-            $berita->increment('view_count');
-
-            return $berita;
         });
 
-        // Get related news
-        $relatedNews = Cache::remember("berita_related_{$berita->id}", 1800, function () use ($berita) {
+        // Increment view count outside cache to ensure it increments on every view
+        // Requirements: 9.5 - WHEN a berita is viewed THEN the System SHALL increment view_count
+        $berita->increment('view_count');
+
+        // Get related news with consistent cache key pattern
+        $relatedNews = Cache::remember(\App\Services\CacheService::BERITA_RELATED_PREFIX . $berita->id, 1800, function () use ($berita) {
             return $berita->relatedNews;
         });
 
@@ -119,7 +122,6 @@ class BeritaController extends Controller
                 'id' => $item->id,
                 'judul_utama' => $item->judul_utama,
                 'slug' => $item->slug,
-                'ringkasan_inti' => $item->ringkasan_inti,
                 'created_at' => $item->formatted_created_at,
                 'hero_image' => $heroPhoto ? $heroPhoto->full_url : ($item->hero_image ? asset($item->hero_image) : null),
                 'kategori' => $item->kategori,
@@ -127,47 +129,21 @@ class BeritaController extends Controller
             ];
         });
 
-        // Construct content from multiple fields
+        // Construct content from teras_berita field
         $content = '';
-        if ($berita->teras_berita) $content .= '<p class="lead font-semibold mb-4">' . $berita->teras_berita . '</p>';
-        if ($berita->konteks_latar_belakang) $content .= '<div class="mb-4">' . $berita->konteks_latar_belakang . '</div>';
-        if ($berita->data_capaian_kinerja) $content .= '<h3 class="text-xl font-bold mt-6 mb-2">Data Capaian Kinerja</h3><div class="mb-4">' . $berita->data_capaian_kinerja . '</div>';
-
-        if ($berita->mekanisme_penilaian) $content .= '<h3 class="text-xl font-bold mt-6 mb-2">Mekanisme Penilaian</h3><div class="mb-4">' . $berita->mekanisme_penilaian . '</div>';
-        if ($berita->kesimpulan_komitmen) $content .= '<h3 class="text-xl font-bold mt-6 mb-2">Kesimpulan & Komitmen</h3><div class="mb-4">' . $berita->kesimpulan_komitmen . '</div>';
-
-        // Add quote if exists
-        if ($berita->quote_pejabat) {
-            $content .= '<blockquote class="border-l-4 border-blue-500 pl-4 italic my-6 bg-gray-50 p-4 rounded">';
-            $content .= '"' . $berita->quote_pejabat . '"';
-            if ($berita->nama_pejabat) {
-                $content .= '<footer class="text-sm font-bold mt-2 not-italic">— ' . $berita->nama_pejabat;
-                if ($berita->jabatan_pejabat) $content .= ', ' . $berita->jabatan_pejabat;
-                $content .= '</footer>';
-            }
-            $content .= '</blockquote>';
-        }
+        if ($berita->teras_berita) $content .= '<div class="prose max-w-none">' . $berita->teras_berita . '</div>';
 
         $beritaData = [
             'id' => $berita->id,
             'judul_utama' => $berita->judul_utama,
             'slug' => $berita->slug,
-            'ringkasan_inti' => $berita->ringkasan_inti,
             'hero_image' => asset($berita->hero_image),
             'hero_image_alt' => $berita->hero_image_alt ?? $berita->judul_utama,
             'lokasi' => $berita->lokasi,
             'tanggal_rilis' => $berita->tanggal_rilis->format('d F Y'),
             'teras_berita' => $berita->teras_berita,
-            'konteks_latar_belakang' => $berita->konteks_latar_belakang,
-            'quote_pejabat' => $berita->quote_pejabat,
-            'nama_pejabat' => $berita->nama_pejabat,
-            'jabatan_pejabat' => $berita->jabatan_pejabat,
-            'data_capaian_kinerja' => $berita->data_capaian_kinerja,
-            'mekanisme_penilaian' => $berita->mekanisme_penilaian,
-            'kesimpulan_komitmen' => $berita->kesimpulan_komitmen,
-            'content' => $content, // Added content field
+            'content' => $content,
             'kategori' => $berita->kategori,
-            'tag' => $berita->tag,
             'is_published' => $berita->is_published,
             'is_featured' => $berita->is_featured,
             'view_count' => $berita->view_count,
@@ -188,14 +164,17 @@ class BeritaController extends Controller
 
     /**
      * Increment view count (AJAX endpoint).
+     * 
+     * Requirements: 9.5 - WHEN a berita is viewed THEN the System SHALL increment view_count
      */
     public function incrementView(Request $request, int $id): JsonResponse
     {
+        // Requirements: 9.1, 9.3 - Only published berita should be accessible
         $berita = Berita::published()->findOrFail($id);
         $berita->increment('view_count');
 
-        // Clear cache for this news
-        Cache::forget("berita_show_{$berita->slug}");
+        // Clear cache for this news using consistent cache key pattern
+        Cache::forget(\App\Services\CacheService::BERITA_SHOW_PREFIX . $berita->slug);
 
         return response()->json([
             'success' => true,
@@ -223,7 +202,6 @@ class BeritaController extends Controller
                 'id' => $item->id,
                 'judul_utama' => $item->judul_utama,
                 'slug' => $item->slug,
-                'ringkasan_inti' => $item->ringkasan_inti,
                 'hero_image' => asset($item->hero_image),
                 'kategori' => $item->kategori,
                 'tanggal_rilis' => $item->tanggal_rilis->format('d F Y'),
@@ -274,7 +252,6 @@ class BeritaController extends Controller
                 'id' => $item->id,
                 'judul_utama' => $item->judul_utama,
                 'slug' => $item->slug,
-                'ringkasan_inti' => $item->ringkasan_inti,
                 'hero_image' => $heroPhoto ? $heroPhoto->full_url : null,
                 'kategori' => $item->kategori,
                 'tanggal_rilis' => $item->formatted_tanggal_rilis,
@@ -311,7 +288,6 @@ class BeritaController extends Controller
                 'id' => $item->id,
                 'judul_utama' => $item->judul_utama,
                 'slug' => $item->slug,
-                'ringkasan_inti' => $item->ringkasan_inti,
                 'hero_image' => $heroPhoto ? $heroPhoto->full_url : null,
                 'kategori' => $item->kategori,
                 'view_count' => $item->view_count,
@@ -339,7 +315,6 @@ class BeritaController extends Controller
                 'id' => $item->id,
                 'judul_utama' => $item->judul_utama,
                 'slug' => $item->slug,
-                'ringkasan_inti' => $item->ringkasan_inti,
                 'hero_image' => $heroPhoto ? $heroPhoto->full_url : null,
                 'kategori' => $item->kategori,
                 'tanggal_rilis' => $item->formatted_tanggal_rilis,
@@ -373,7 +348,6 @@ class BeritaController extends Controller
                 'id' => $item->id,
                 'judul_utama' => $item->judul_utama,
                 'slug' => $item->slug,
-                'ringkasan_inti' => $item->ringkasan_inti,
                 'hero_image' => $heroPhoto ? $heroPhoto->full_url : null,
                 'kategori' => $item->kategori,
                 'tanggal_rilis' => $item->formatted_tanggal_rilis,

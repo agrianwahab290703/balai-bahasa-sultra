@@ -39,18 +39,15 @@ export default defineConfig({
             ignored: ['!**/node_modules/**', '!**/vendor/**'],
         },
     },
+    esbuild: {
+        drop: ['console', 'debugger'],
+    },
     build: {
         manifest: 'manifest.json',
         outDir: 'public/build',
         assetsDir: 'assets',
         sourcemap: false,
-        minify: 'terser',
-        terserOptions: {
-            compress: {
-                drop_console: true,
-                drop_debugger: true,
-            },
-        },
+        minify: 'esbuild',
         rollupOptions: {
             output: {
                 manualChunks: {

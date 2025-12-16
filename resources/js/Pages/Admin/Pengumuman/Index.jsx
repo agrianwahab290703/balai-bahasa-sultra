@@ -41,6 +41,14 @@ export default function Index({ pengumuman }) {
             input.value = id;
             form.appendChild(input);
         });
+
+        // Add CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
         
         document.body.appendChild(form);
         form.submit();

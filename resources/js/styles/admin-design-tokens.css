@@ -1,29 +1,823 @@
 /* resources/js/styles/admin-design-tokens.css */
+/* Admin Panel Redesign - Glassmorphism Theme */
+/* Color Palette: Blue (#1E40AF, #3B82F6), White (#FFFFFF), Yellow (#FFD700, #FFC107) */
 
 :root {
-  /* Primary Colors */
-  --admin-primary-blue: #2563eb;
-  --admin-accent-yellow: #FFD700;
-  --admin-white: #ffffff;
+  /* ============================================
+     PRIMARY COLORS - Design Spec v2.0
+     ============================================ */
+  --admin-primary-blue: #1E40AF;      /* Primary Blue - main brand color */
+  --admin-secondary-blue: #3B82F6;    /* Secondary Blue - lighter accent */
+  --admin-tertiary-blue: #1E3A8A;     /* Tertiary Blue - darker shade */
+  --admin-accent-yellow: #FFD700;     /* Primary Yellow - gold accent */
+  --admin-secondary-yellow: #FFC107;  /* Secondary Yellow - amber accent */
+  --admin-white: #FFFFFF;             /* Pure White */
+  --admin-black-text: #0F172A;        /* Dark text color */
   
-  /* Semantic Colors */
+  /* Legacy color aliases for backward compatibility */
+  --admin-blue-primary: var(--admin-tertiary-blue);
+  --admin-blue-secondary: var(--admin-primary-blue);
+  --admin-blue-tertiary: var(--admin-secondary-blue);
+  --admin-yellow-accent: var(--admin-accent-yellow);
+  
+  /* ============================================
+     SEMANTIC COLORS
+     ============================================ */
   --admin-success: #10b981;
   --admin-warning: #f59e0b;
   --admin-error: #ef4444;
   --admin-info: #3b82f6;
   
-  /* Gradients */
-  --admin-gradient-sidebar: linear-gradient(180deg, #2563eb 0%, #3b82f6 25%, #ffffff 50%, #fef3c7 75%, #FFD700 100%);
-  --admin-gradient-button: linear-gradient(90deg, #2563eb 0%, #ffffff 50%, #FFD700 100%);
-  --admin-gradient-card: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 215, 0, 0.1) 100%);
+  /* ============================================
+     GRADIENTS - Multi-color stops (Blue → White → Yellow)
+     ============================================ */
+  /* Sidebar: Vertical gradient blue to darker blue */
+  --admin-gradient-sidebar: linear-gradient(180deg, #1E40AF 0%, #1E3A8A 100%);
   
-  /* Glassmorphism */
-  --admin-glass-bg: rgba(255, 255, 255, 0.8);
-  --admin-glass-border: rgba(37, 99, 235, 0.1);
-  --admin-glass-shadow: 0 8px 32px rgba(37, 99, 235, 0.1);
+  /* Header: Horizontal glassmorphism gradient */
+  --admin-gradient-header: linear-gradient(90deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
   
-  /* Animation */
-  --admin-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --admin-transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  --admin-transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Button: Soft gradients with white integration */
+  --admin-gradient-button: linear-gradient(135deg, #FFFFFF 0%, #3B82F6 40%, #1E40AF 100%);
+  --admin-gradient-button-secondary: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, #3B82F6 50%, rgba(255, 255, 255, 0.8) 100%);
+  --admin-gradient-button-accent: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, #FFD700 50%, #FFC107 100%);
+  --admin-gradient-button-hover: linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, rgba(255, 255, 255, 0.2) 100%);
+  
+  /* Card: Subtle diagonal gradient with transparency */
+  --admin-gradient-card: linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(255, 215, 0, 0.1) 100%);
+  --admin-gradient-card-border: linear-gradient(135deg, rgba(30, 64, 175, 0.3) 0%, rgba(255, 215, 0, 0.3) 100%);
+  
+  /* Table header: Horizontal blue gradient */
+  --admin-gradient-table-header: linear-gradient(90deg, #1E40AF 0%, #3B82F6 100%);
+  
+  /* Progress bar: Blue to yellow */
+  --admin-gradient-progress: linear-gradient(90deg, #1E40AF 0%, #FFD700 100%);
+  
+  /* Hero section: Enhanced white-dominant gradient */
+  --admin-gradient-hero: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(59, 130, 246, 0.1) 25%, #FFFFFF 50%, rgba(255, 215, 0, 0.1) 75%, rgba(255, 255, 255, 0.9) 100%);
+
+  /* Icon background circle: Soft gradients */
+  --admin-gradient-icon: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, #3B82F6 50%, rgba(255, 255, 255, 0.8) 100%);
+  --admin-gradient-icon-accent: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, #FFD700 50%, rgba(255, 255, 255, 0.8) 100%);
+  
+  /* ============================================
+     GLASSMORPHISM PROPERTIES
+     ============================================ */
+  /* Base glassmorphism - for general components */
+  --admin-glass-bg: rgba(255, 255, 255, 0.15);
+  --admin-glass-bg-light: rgba(255, 255, 255, 0.25);
+  --admin-glass-bg-dark: rgba(255, 255, 255, 0.1);
+  --admin-glass-border: rgba(255, 255, 255, 0.2);
+  --admin-glass-border-light: rgba(255, 255, 255, 0.3);
+  --admin-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --admin-glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.15);
+  --admin-glass-blur: 12px;
+  --admin-glass-radius: 12px;
+  
+  /* Sidebar Glassmorphism */
+  --admin-sidebar-glass-bg: rgba(255, 255, 255, 0.1);
+  --admin-sidebar-glass-blur: 12px;
+  --admin-sidebar-glass-border: rgba(255, 255, 255, 0.15);
+  
+  /* Header Glassmorphism */
+  --admin-header-glass-bg: rgba(255, 255, 255, 0.85);
+  --admin-header-glass-blur: 8px;
+  --admin-header-glass-border: rgba(255, 255, 255, 0.3);
+  
+  /* Button Glassmorphism */
+  --admin-button-glass-bg: rgba(255, 255, 255, 0.2);
+  --admin-button-glass-blur: 6px;
+  
+  /* Card Glassmorphism */
+  --admin-card-glass-bg: rgba(255, 255, 255, 0.15);
+  --admin-card-glass-blur: 12px;
+  --admin-card-glass-border: rgba(255, 255, 255, 0.2);
+  
+  /* Activity Section Glassmorphism */
+  --admin-activity-glass-bg: rgba(255, 255, 255, 0.1);
+  --admin-activity-glass-blur: 10px;
+  
+  /* Table Glassmorphism */
+  --admin-table-glass-bg: rgba(255, 255, 255, 0.15);
+  --admin-table-glass-blur: 8px;
+  --admin-table-glass-border: rgba(255, 255, 255, 0.2);
+  
+  /* Module Summary Glassmorphism */
+  --admin-module-glass-bg: rgba(255, 255, 255, 0.25);
+  --admin-module-glass-blur: 6px;
+  
+  /* Form Input Glassmorphism */
+  --admin-input-glass-bg: rgba(255, 255, 255, 0.1);
+  --admin-input-glass-blur: 4px;
+  --admin-input-focus-glow: 0 0 0 3px rgba(30, 64, 175, 0.3);
+  
+  /* ============================================
+     ANIMATION TIMINGS
+     ============================================ */
+  --admin-transition-fast: 150ms ease;
+  --admin-transition-normal: 300ms ease;
+  --admin-transition-slow: 500ms ease;
+  
+  /* Specific Animation Durations */
+  --admin-sidebar-transition: 300ms ease-in-out;
+  --admin-dropdown-transition: 200ms ease;
+  --admin-ripple-duration: 400ms ease;
+  --admin-expand-transition: 250ms ease;
+  --admin-flip-transition: 350ms ease;
+  --admin-hover-transition: 200ms ease;
+  --admin-page-fade: 300ms ease;
+  --admin-modal-transition: 200ms ease;
+  --admin-stagger-delay: 50ms;
+  
+  /* ============================================
+     HOVER EFFECTS
+     ============================================ */
+  --admin-hover-overlay: rgba(255, 215, 0, 0.1);
+  --admin-hover-overlay-strong: rgba(255, 215, 0, 0.2);
+  --admin-hover-shadow: 0 4px 12px rgba(255, 215, 0, 0.15);
+  --admin-hover-scale: 1.02;
+  --admin-hover-brightness: 1.1;
+  --admin-hover-translateY: -2px;
+  --admin-menu-hover-bg: rgba(255, 255, 255, 0.15);
+  --admin-row-hover-bg: rgba(255, 215, 0, 0.1);
+  --admin-button-hover-bg: rgba(255, 255, 255, 0.2);
+  
+  /* ============================================
+     BORDER RADIUS
+     ============================================ */
+  --admin-radius-xs: 4px;
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 12px;
+  --admin-radius-lg: 16px;
+  --admin-radius-xl: 20px;
+  --admin-radius-full: 9999px;
+  
+  /* ============================================
+     SPACING
+     ============================================ */
+  --admin-spacing-xs: 4px;
+  --admin-spacing-sm: 8px;
+  --admin-spacing-md: 16px;
+  --admin-spacing-lg: 24px;
+  --admin-spacing-xl: 32px;
+  --admin-spacing-2xl: 48px;
+  
+  /* ============================================
+     SIZING
+     ============================================ */
+  --admin-sidebar-width: 256px;
+  --admin-sidebar-width-collapsed: 64px;
+  --admin-header-height: 64px;
+  --admin-touch-target-min: 44px;
+  
+  /* ============================================
+     BREAKPOINTS
+     ============================================ */
+  --admin-breakpoint-sm: 640px;
+  --admin-breakpoint-md: 768px;
+  --admin-breakpoint-lg: 1024px;
+  --admin-breakpoint-xl: 1280px;
+  
+  /* ============================================
+     Z-INDEX LAYERS
+     ============================================ */
+  --admin-z-base: 1;
+  --admin-z-dropdown: 100;
+  --admin-z-sticky: 200;
+  --admin-z-sidebar: 300;
+  --admin-z-header: 400;
+  --admin-z-modal: 500;
+  --admin-z-tooltip: 600;
+  --admin-z-toast: 700;
+  
+  /* ============================================
+     TYPOGRAPHY
+     ============================================ */
+  --admin-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --admin-font-size-xs: 0.75rem;
+  --admin-font-size-sm: 0.875rem;
+  --admin-font-size-base: 1rem;
+  --admin-font-size-lg: 1.125rem;
+  --admin-font-size-xl: 1.25rem;
+  --admin-font-size-2xl: 1.5rem;
+  --admin-font-weight-normal: 400;
+  --admin-font-weight-medium: 500;
+  --admin-font-weight-semibold: 600;
+  --admin-font-weight-bold: 700;
+}
+
+/* ============================================
+   FALLBACK STYLES FOR BROWSERS WITHOUT BACKDROP-FILTER
+   ============================================ */
+@supports not (backdrop-filter: blur(12px)) {
+  :root {
+    --admin-glass-bg: rgba(255, 255, 255, 0.9);
+    --admin-glass-bg-light: rgba(255, 255, 255, 0.95);
+    --admin-glass-bg-dark: rgba(255, 255, 255, 0.85);
+    --admin-sidebar-glass-bg: rgba(30, 64, 175, 0.95);
+    --admin-header-glass-bg: rgba(255, 255, 255, 0.98);
+    --admin-card-glass-bg: rgba(255, 255, 255, 0.95);
+    --admin-table-glass-bg: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/* Mobile First Approach - Base styles are mobile */
+
+/* Small devices (640px and up) */
+@media (min-width: 640px) {
+  .admin-container {
+    padding: var(--admin-spacing-lg);
+  }
+  
+  .admin-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--admin-spacing-md);
+  }
+  
+  .admin-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .glass-card {
+    padding: var(--admin-spacing-lg);
+  }
+}
+
+/* Medium devices (768px and up) - Tablet */
+@media (min-width: 768px) {
+  .admin-sidebar {
+    width: 280px;
+  }
+  
+  .admin-sidebar.collapsed {
+    width: 80px;
+  }
+  
+  .admin-main {
+    margin-left: 280px;
+  }
+  
+  .admin-main.sidebar-collapsed {
+    margin-left: 80px;
+  }
+  
+  .admin-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .admin-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .admin-header {
+    padding: 0 var(--admin-spacing-xl);
+  }
+  
+  .glass-card {
+    padding: var(--admin-spacing-xl);
+  }
+}
+
+/* Large devices (1024px and up) - Desktop */
+@media (min-width: 1024px) {
+  .admin-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .admin-stats-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  .admin-table-container {
+    overflow-x: auto;
+  }
+  
+  .admin-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--admin-spacing-lg);
+  }
+}
+
+/* Extra large devices (1280px and up) */
+@media (min-width: 1280px) {
+  .admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  
+  .admin-sidebar {
+    width: 320px;
+  }
+  
+  .admin-sidebar.collapsed {
+    width: 80px;
+  }
+  
+  .admin-main {
+    margin-left: 320px;
+  }
+  
+  .admin-main.sidebar-collapsed {
+    margin-left: 80px;
+  }
+}
+
+/* Mobile specific adjustments */
+@media (max-width: 639px) {
+  .admin-sidebar {
+    position: fixed;
+    left: -100%;
+    top: 0;
+    height: 100vh;
+    z-index: var(--admin-z-sidebar);
+    transition: left var(--admin-sidebar-transition);
+  }
+  
+  .admin-sidebar.open {
+    left: 0;
+  }
+  
+  .admin-main {
+    margin-left: 0;
+  }
+  
+  .admin-header {
+    padding: 0 var(--admin-spacing-md);
+  }
+  
+  .admin-grid {
+    grid-template-columns: 1fr;
+    gap: var(--admin-spacing-sm);
+  }
+  
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .glass-card {
+    padding: var(--admin-spacing-md);
+  }
+  
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-table-container {
+    font-size: var(--admin-font-size-sm);
+  }
+  
+  .admin-button {
+    min-height: 44px; /* Touch target minimum */
+    padding: var(--admin-spacing-sm) var(--admin-spacing-md);
+  }
+  
+  .admin-pagination {
+    flex-direction: column;
+    gap: var(--admin-spacing-sm);
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .glass-card:hover {
+    transform: none;
+  }
+  
+  .admin-button:hover {
+    transform: none;
+  }
+  
+  .admin-menu-item:hover {
+    background: transparent;
+  }
+  
+  .admin-menu-item:active {
+    background: var(--admin-menu-hover-bg);
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .glass-card {
+    border-width: 0.5px;
+  }
+  
+  .admin-sidebar {
+    border-width: 0.5px;
+  }
+  
+  .admin-header {
+    border-width: 0.5px;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .glass-card,
+  .admin-sidebar,
+  .admin-header,
+  .admin-button,
+  .admin-menu-item {
+    transition: none;
+  }
+  
+  .animate-fade-in {
+    animation: none;
+  }
+  
+  .animate-slide-up {
+    animation: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --admin-glass-bg: rgba(30, 64, 175, 0.2);
+    --admin-glass-bg-light: rgba(30, 64, 175, 0.25);
+    --admin-glass-bg-dark: rgba(30, 64, 175, 0.15);
+    --admin-sidebar-glass-bg: rgba(30, 64, 175, 0.3);
+    --admin-header-glass-bg: rgba(30, 64, 175, 0.25);
+    --admin-card-glass-bg: rgba(30, 64, 175, 0.2);
+    --admin-table-glass-bg: rgba(30, 64, 175, 0.2);
+    --admin-glass-border: rgba(255, 255, 255, 0.1);
+    --admin-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Print styles */
+@media print {
+  .admin-sidebar,
+  .admin-header,
+  .admin-button,
+  .admin-pagination {
+    display: none !important;
+  }
+  
+  .admin-main {
+    margin-left: 0 !important;
+  }
+  
+  .glass-card {
+    border: 1px solid #000 !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+  
+  .admin-table {
+    border: 1px solid #000 !important;
+  }
+}
+
+/* ============================================
+   PAGE ANIMATIONS
+   ============================================ */
+
+/* Fade in animation for page content */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide up animation for cards */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale in animation for modals */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Slide in from left for sidebar */
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide in from right for panels */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Pulse animation for notifications */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Bounce animation for buttons */
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -30px, 0);
+  }
+  70% {
+    transform: translate3d(0, -15px, 0);
+  }
+  90% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+/* Ripple animation for touch feedback */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+/* Animation utility classes */
+.animate-fade-in {
+  animation: fade-in var(--admin-page-fade, 300ms) ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up var(--admin-expand-transition, 250ms) ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in var(--admin-modal-transition, 200ms) ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left var(--admin-sidebar-transition, 300ms) ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right var(--admin-sidebar-transition, 300ms) ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+.animate-ripple {
+  animation: ripple var(--admin-ripple-duration, 400ms) ease-out;
+}
+
+/* Stagger animation delays */
+.animate-stagger-1 {
+  animation-delay: 0ms;
+}
+
+.animate-stagger-2 {
+  animation-delay: var(--admin-stagger-delay, 50ms);
+}
+
+.animate-stagger-3 {
+  animation-delay: calc(var(--admin-stagger-delay, 50ms) * 2);
+}
+
+.animate-stagger-4 {
+  animation-delay: calc(var(--admin-stagger-delay, 50ms) * 3);
+}
+
+.animate-stagger-5 {
+  animation-delay: calc(var(--admin-stagger-delay, 50ms) * 4);
+}
+
+.animate-stagger-6 {
+  animation-delay: calc(var(--admin-stagger-delay, 50ms) * 5);
+}
+
+/* Page transition animations */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--admin-page-fade, 300ms) ease-out,
+              transform var(--admin-page-fade, 300ms) ease-out;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity var(--admin-page-fade, 300ms) ease-out,
+              transform var(--admin-page-fade, 300ms) ease-out;
+}
+
+/* Additional glassmorphism-specific animations */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scale-102 {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.hover-scale-102:hover {
+  animation: scale-102 0.3s ease-in-out;
+}
+
+/* Loading shimmer effect */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Hover animation classes */
+.hover-lift {
+  transition: transform var(--admin-hover-transition, 200ms) ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(var(--admin-hover-translateY, -2px));
+}
+
+.hover-glow:hover {
+  box-shadow: var(--admin-hover-shadow, 0 4px 12px rgba(255, 215, 0, 0.15));
+}
+
+.hover-scale {
+  transition: transform var(--admin-hover-transition, 200ms) ease-out;
+}
+
+.hover-scale:hover {
+  transform: scale(var(--admin-hover-scale, 1.02));
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.1)
+  );
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--admin-radius-md, 12px);
+}
+
+.loading-pulse {
+  background: rgba(255, 255, 255, 0.1);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Success animation */
+@keyframes success-checkmark {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.success-animation {
+  animation: success-checkmark 0.6s ease-in-out;
+}
+
+/* Error shake animation */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-10px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(10px);
+  }
+}
+
+.error-shake {
+  animation: shake 0.6s ease-in-out;
+}
+
+/* Floating animation for decorative elements */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Responsive animation adjustments */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-scale-in,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-pulse,
+  .animate-bounce,
+  .animate-ripple,
+  .animate-float,
+  .hover-lift,
+  .hover-glow,
+  .hover-scale {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
 }

@@ -8,11 +8,23 @@ use App\Models\PpidDocument;
 use App\Models\Keberatan;
 use App\Http\Requests\KeberatanRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
 
 class PpidController extends Controller
 {
+    /**
+     * Cache key constants for PPID documents
+     */
+    private const CACHE_KEY_ALL = 'ppid_documents_all';
+    private const CACHE_KEY_SETIAP_SAAT = 'ppid_documents_setiap_saat';
+    private const CACHE_KEY_SERTA_MERTA = 'ppid_documents_serta_merta';
+    private const CACHE_KEY_BERKALA = 'ppid_documents_berkala';
+    private const CACHE_KEY_DIKECUALIKAN = 'ppid_documents_dikecualikan';
+    private const CACHE_TTL = 1800; // 30 minutes
+
     public function profil()
     {
         $profile = PpidContent::byType('profile')->active()->orderByOrder()->first();
@@ -32,50 +44,128 @@ class PpidController extends Controller
         ]);
     }
 
+    /**
+     * Display all PPID documents grouped by category.
+     * Only shows documents where is_active=true.
+     * 
+     * @see Requirements 11.1, 11.5
+     */
     public function informasiPublik()
     {
-        $categories = [
-            'setiap-saat' => PpidDocument::byCategory('setiap_saat')->active()->get(),
-            'serta-merta' => PpidDocument::byCategory('serta_merta')->active()->get(),
-            'berkala' => PpidDocument::byCategory('berkala')->active()->get(),
-            'dikecualikan' => PpidDocument::byCategory('dikecualikan')->active()->get(),
-        ];
+        // Cache PPID documents for 30 minutes
+        // Only active documents are shown (is_active=true)
+        $categories = Cache::remember(self::CACHE_KEY_ALL, self::CACHE_TTL, function () {
+            return [
+                'setiap-saat' => PpidDocument::byCategory('setiap_saat')
+                    ->active()
+                    ->orderBy('created_at', 'desc')
+                    ->get(),
+                'serta-merta' => PpidDocument::byCategory('serta_merta')
+                    ->active()
+                    ->orderBy('created_at', 'desc')
+                    ->get(),
+                'berkala' => PpidDocument::byCategory('berkala')
+                    ->active()
+                    ->orderBy('created_at', 'desc')
+                    ->get(),
+                'dikecualikan' => PpidDocument::byCategory('dikecualikan')
+                    ->active()
+                    ->orderBy('created_at', 'desc')
+                    ->get(),
+            ];
+        });
 
         return Inertia::render('Ppid/InformasiPublik', [
             'categories' => $categories,
         ]);
     }
 
+    /**
+     * Display PPID documents in 'setiap_saat' category.
+     * Only shows documents where is_active=true.
+     * 
+     * @see Requirements 11.1, 11.5
+     */
     public function informasiSetiapSaat()
     {
-        $documents = PpidDocument::byCategory('setiap_saat')->active()->orderBy('created_at', 'desc')->paginate(12);
+        $page = request()->get('page', 1);
+        $cacheKey = self::CACHE_KEY_SETIAP_SAAT . '_page_' . $page;
+        
+        $documents = Cache::remember($cacheKey, self::CACHE_TTL, function () {
+            return PpidDocument::byCategory('setiap_saat')
+                ->active()
+                ->orderBy('created_at', 'desc')
+                ->paginate(12);
+        });
         
         return Inertia::render('Ppid/InformasiPublik/SetiapSaat', [
             'documents' => $documents,
         ]);
     }
 
+    /**
+     * Display PPID documents in 'serta_merta' category.
+     * Only shows documents where is_active=true.
+     * 
+     * @see Requirements 11.1, 11.5
+     */
     public function informasiSertaMerta()
     {
-        $documents = PpidDocument::byCategory('serta_merta')->active()->orderBy('created_at', 'desc')->paginate(12);
+        $page = request()->get('page', 1);
+        $cacheKey = self::CACHE_KEY_SERTA_MERTA . '_page_' . $page;
+        
+        $documents = Cache::remember($cacheKey, self::CACHE_TTL, function () {
+            return PpidDocument::byCategory('serta_merta')
+                ->active()
+                ->orderBy('created_at', 'desc')
+                ->paginate(12);
+        });
         
         return Inertia::render('Ppid/InformasiPublik/SertaMerta', [
             'documents' => $documents,
         ]);
     }
 
+    /**
+     * Display PPID documents in 'berkala' category.
+     * Only shows documents where is_active=true.
+     * 
+     * @see Requirements 11.1, 11.5
+     */
     public function informasiBerkala()
     {
-        $documents = PpidDocument::byCategory('berkala')->active()->orderBy('created_at', 'desc')->paginate(12);
+        $page = request()->get('page', 1);
+        $cacheKey = self::CACHE_KEY_BERKALA . '_page_' . $page;
+        
+        $documents = Cache::remember($cacheKey, self::CACHE_TTL, function () {
+            return PpidDocument::byCategory('berkala')
+                ->active()
+                ->orderBy('created_at', 'desc')
+                ->paginate(12);
+        });
         
         return Inertia::render('Ppid/InformasiPublik/Berkala', [
             'documents' => $documents,
         ]);
     }
 
+    /**
+     * Display PPID documents in 'dikecualikan' category.
+     * Only shows documents where is_active=true.
+     * 
+     * @see Requirements 11.1, 11.5
+     */
     public function informasiDikecualikan()
     {
-        $documents = PpidDocument::byCategory('dikecualikan')->active()->orderBy('created_at', 'desc')->paginate(12);
+        $page = request()->get('page', 1);
+        $cacheKey = self::CACHE_KEY_DIKECUALIKAN . '_page_' . $page;
+        
+        $documents = Cache::remember($cacheKey, self::CACHE_TTL, function () {
+            return PpidDocument::byCategory('dikecualikan')
+                ->active()
+                ->orderBy('created_at', 'desc')
+                ->paginate(12);
+        });
         
         return Inertia::render('Ppid/InformasiPublik/Dikecualikan', [
             'documents' => $documents,
@@ -92,20 +182,35 @@ class PpidController extends Controller
         return Inertia::render('Ppid/PengajuanKeberatan');
     }
 
+    /**
+     * Download a PPID document and increment download count.
+     * Only allows download of active documents.
+     * 
+     * @param int $id Document ID
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @see Requirements 11.4
+     */
     public function downloadDocument($id)
     {
-        $document = PpidDocument::findOrFail($id);
+        // Only allow download of active documents
+        $document = PpidDocument::where('id', $id)
+            ->where('is_active', true)
+            ->firstOrFail();
         
-        // Increment download count
-        $document->increment('download_count');
-        
-        $filePath = storage_path('app/public/' . $document->file_path);
-        
-        if (!file_exists($filePath)) {
-            abort(404);
+        // Check if file exists
+        if (!$document->file_path || !Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'File tidak ditemukan');
         }
         
-        return response()->download($filePath, $document->title);
+        // Increment download count
+        // This tracks the number of times the document has been downloaded
+        $document->increment('download_count');
+        
+        // Get the file extension for proper filename
+        $extension = pathinfo($document->file_path, PATHINFO_EXTENSION);
+        $filename = $document->title . '.' . $extension;
+        
+        return Storage::disk('public')->download($document->file_path, $filename);
     }
 
     /**

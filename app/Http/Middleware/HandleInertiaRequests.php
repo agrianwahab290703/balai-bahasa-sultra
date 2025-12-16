@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -37,9 +38,21 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Check if this is an admin route
+        $isAdminRoute = str_starts_with($request->path(), 'admin');
+        
+        // Get user from appropriate guard
+        $user = $isAdminRoute 
+            ? Auth::guard('admin')->user() 
+            : $request->user();
+
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+            ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
             ],
         ]);
     }
