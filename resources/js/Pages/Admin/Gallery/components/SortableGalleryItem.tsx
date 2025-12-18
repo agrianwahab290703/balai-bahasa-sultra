@@ -109,17 +109,32 @@ export function SortableGalleryItem({
 
       {/* Image */}
       <div className="aspect-square bg-muted">
-        {gallery.thumbnail_url || gallery.image_url ? (
-          <img
-            src={gallery.thumbnail_url || gallery.image_url || ''}
-            alt={gallery.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            No Image
-          </div>
-        )}
+        {(() => {
+          const raw =
+            gallery.thumbnail_url ||
+            gallery.image_url ||
+            gallery.image ||
+            '';
+          const src =
+            raw.startsWith('http')
+              ? raw
+              : raw.includes('storage/')
+              ? (raw.startsWith('/') ? raw : `/${raw}`)
+              : raw
+              ? `/storage/${raw}`
+              : '';
+          return src ? (
+            <img
+              src={src}
+              alt={gallery.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+              No Image
+            </div>
+          );
+        })()}
       </div>
 
       {/* Info */}

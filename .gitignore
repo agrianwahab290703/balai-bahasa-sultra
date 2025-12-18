@@ -22,3 +22,30 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Debug & Test files
+debug-*.py
+temp_*.py
+test-*.php
+test-*.html
+test-*.sh
+*.af
+
+# OpenRouter config files
+openrouter-*.json
+openrouter-*.sh
+openrouter-*.js
+openrouter-*.php
+openrouter-*.py
+droid-ai-*.json
+
+# Misc
+nul
+count()
+_decoder.js
+task.md
+
+# IDE agent files
+.letta/
+.skills/
+agent-*.af

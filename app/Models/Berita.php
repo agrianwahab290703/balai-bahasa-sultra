@@ -101,7 +101,8 @@ class Berita extends Model
             $originalSlug = $berita->slug;
             $counter = 1;
 
-            while (static::where('slug', $berita->slug)
+            while (static::withTrashed()
+                ->where('slug', $berita->slug)
                 ->where('id', '!=', $berita->id)
                 ->exists()) {
                 $berita->slug = $originalSlug . '-' . $counter;

@@ -81,7 +81,7 @@ class MediaController extends Controller
         // Return JSON only for non-Inertia AJAX requests (e.g., media picker modal)
         // Check for X-Inertia header to distinguish Inertia requests from regular AJAX
         $isInertiaRequest = $request->header('X-Inertia');
-        
+
         if (!$isInertiaRequest && ($request->wantsJson() || $request->ajax())) {
             return response()->json($media);
         }
@@ -103,9 +103,30 @@ class MediaController extends Controller
      */
     public function upload(Request $request): JsonResponse
     {
+        // Debug: Log request details for troubleshooting
+        \Log::info('Media upload request received:', [
+            'has_file' => $request->hasFile('file'),
+            'all_files' => array_keys($request->allFiles()),
+            'content_type' => $request->header('Content-Type'),
+            'is_ajax' => $request->ajax(),
+            'user_id' => auth('admin')->id(),
+            'session_id' => session()->getId(),
+            'csrf_header' => $request->header('X-CSRF-TOKEN') ? 'present' : 'missing',
+            'csrf_form' => $request->input('_token') ? 'present' : 'missing',
+        ]);
+
+        // Double-check authentication (middleware should handle this, but just in case)
+        if (!auth('admin')->check()) {
+            \Log::warning('Upload attempted without authentication');
+            return response()->json([
+                'success' => false,
+                'error' => 'Unauthenticated. Please login again.',
+            ], 401);
+        }
+
         $request->validate([
             'file' => 'required|file|max:10240', // 10MB max
-            'context' => 'nullable|string|in:hero_image,gallery,ppid_document,standar_pelayanan,profile_image,media_library,default',
+            'context' => 'nullable|string|in:hero_image,gallery,ppid_document,standar_pelayanan,profile_image,media_library,default,supporting_images',
         ]);
 
         try {

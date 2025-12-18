@@ -45,6 +45,7 @@ class MediaService
     public const MAX_FILE_SIZES = [
         'hero_image' => 2 * 1024 * 1024,      // 2MB for hero images (Req 1.3)
         'gallery' => 5 * 1024 * 1024,          // 5MB for gallery images
+        'supporting_images' => 2 * 1024 * 1024,
         'ppid_document' => 10 * 1024 * 1024,   // 10MB for PPID documents (Req 3.2)
         'standar_pelayanan' => 10 * 1024 * 1024, // 10MB for service standards (Req 5.2)
         'profile_image' => 5 * 1024 * 1024,    // 5MB for profile images (Req 6.3)
@@ -91,10 +92,38 @@ class MediaService
         ]);
 
         // Store the file
-        $path = $file->storeAs($folder, $filename, $this->disk);
+        try {
+            $path = $file->storeAs($folder, $filename, $this->disk);
 
-        if (!$path) {
-            throw new \Exception('Failed to store file to disk');
+            if (!$path) {
+                \Log::error('Failed to store file to disk', [
+                    'filename' => $filename,
+                    'folder' => $folder,
+                    'disk' => $this->disk,
+                    'disk_config' => config('filesystems.disks.' . $this->disk)
+                ]);
+                throw new \Exception('Failed to store file to disk');
+            }
+        } catch (\Exception $e) {
+            \Log::error('File storage failed with exception', [
+                'error' => $e->getMessage(),
+                'filename' => $filename,
+                'folder' => $folder,
+                'disk' => $this->disk,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Check if it's a permission issue
+            if (strpos($e->getMessage(), 'Permission denied') !== false) {
+                throw new \Exception('Storage directory permission denied. Please check folder permissions.');
+            }
+
+            // Check if it's a disk space issue
+            if (strpos($e->getMessage(), 'No space left') !== false) {
+                throw new \Exception('Insufficient disk space. Please free up some space.');
+            }
+
+            throw new \Exception('Failed to store file: ' . $e->getMessage());
         }
 
         \Log::info('File stored successfully:', ['path' => $path]);
@@ -121,8 +150,26 @@ class MediaService
 
         \Log::info('Media record created:', ['id' => $media->id, 'url' => $media->url]);
 
-        // Generate thumbnail for images
         if ($media->isImage()) {
+            if ($context === 'supporting_images' && in_array($file->getMimeType(), ['image/jpeg', 'image/png'], true)) {
+                $storedFullPath = Storage::disk($this->disk)->path($path);
+                $webpFilename = pathinfo($filename, PATHINFO_FILENAME) . '.webp';
+                $webpPath = $folder . '/' . $webpFilename;
+                $webpFullPath = Storage::disk($this->disk)->path($webpPath);
+                try {
+                    $manager = new ImageManager(new Driver());
+                    $image = $manager->read($storedFullPath);
+                    $image->encodeByPath($webpFullPath);
+                    Storage::disk($this->disk)->delete($path);
+                    $media->update([
+                        'path' => $webpPath,
+                        'mime_type' => 'image/webp',
+                    ]);
+                    $path = $webpPath;
+                } catch (\Exception $e) {
+                    \Log::warning('WEBP conversion failed: ' . $e->getMessage());
+                }
+            }
             $this->generateThumbnail($media);
         }
 
@@ -139,32 +186,90 @@ class MediaService
      */
     public function validateFile(UploadedFile $file, string $context = 'default'): bool
     {
-        $mimeType = $file->getMimeType();
-        $size = $file->getSize();
-        
-        // Get allowed types based on context
-        $allowedTypes = $this->getAllowedTypesForContext($context);
-        
-        // Validate MIME type
-        if (!in_array($mimeType, $allowedTypes, true)) {
+        \Log::info('Validating file', [
+            'original_name' => $file->getClientOriginalName(),
+            'context' => $context
+        ]);
+
+        // Check if file was uploaded properly
+        if (!$file->isValid()) {
+            $uploadError = $file->getErrorMessage();
+            \Log::error('File upload validation failed', [
+                'error' => $uploadError,
+                'error_code' => $file->getError(),
+                'file' => $file->getClientOriginalName()
+            ]);
+
             throw new \InvalidArgumentException(
-                "File type '{$mimeType}' is not allowed for context '{$context}'. " .
-                "Allowed types: " . implode(', ', $allowedTypes)
+                "File upload failed: " . $uploadError . ". Please try again."
             );
         }
-        
+
+        $mimeType = $file->getMimeType();
+        $size = $file->getSize();
+        $originalName = $file->getClientOriginalName();
+
+        // Get allowed types based on context
+        $allowedTypes = $this->getAllowedTypesForContext($context);
+
+        // Log file details for debugging
+        \Log::debug('File details', [
+            'original_name' => $originalName,
+            'mime_type' => $mimeType,
+            'size' => $size,
+            'allowed_types' => $allowedTypes,
+            'context' => $context
+        ]);
+
+        // Validate MIME type
+        if (!in_array($mimeType, $allowedTypes, true)) {
+            \Log::error('Invalid file type detected', [
+                'mime_type' => $mimeType,
+                'allowed_types' => $allowedTypes,
+                'original_name' => $originalName,
+                'context' => $context
+            ]);
+
+            // Provide user-friendly message for common cases
+            $friendlyTypes = $this->getFriendlyFileTypes($allowedTypes);
+            throw new \InvalidArgumentException(
+                "File type not supported. Please upload: {$friendlyTypes}. Current file type: {$mimeType}"
+            );
+        }
+
         // Get max size for context
         $maxSize = self::MAX_FILE_SIZES[$context] ?? self::MAX_FILE_SIZES['default'];
-        
+
         // Validate file size
         if ($size > $maxSize) {
             $maxSizeMB = round($maxSize / (1024 * 1024), 2);
             $fileSizeMB = round($size / (1024 * 1024), 2);
+
+            \Log::error('File size exceeded', [
+                'file_size' => $fileSizeMB,
+                'max_size' => $maxSizeMB,
+                'original_name' => $originalName,
+                'context' => $context
+            ]);
+
             throw new \InvalidArgumentException(
-                "File size ({$fileSizeMB}MB) exceeds maximum allowed size ({$maxSizeMB}MB) for context '{$context}'."
+                "File too large ({$fileSizeMB}MB). Maximum allowed size is {$maxSizeMB}MB for context '{$context}'."
             );
         }
-        
+
+        // Additional check: ensure file is not empty
+        if ($size === 0) {
+            \Log::error('Empty file detected', [
+                'original_name' => $originalName
+            ]);
+            throw new \InvalidArgumentException("File is empty. Please select a valid file.");
+        }
+
+        \Log::info('File validation passed', [
+            'original_name' => $originalName,
+            'context' => $context
+        ]);
+
         return true;
     }
 
@@ -194,6 +299,7 @@ class MediaService
     {
         return match ($context) {
             'hero_image', 'gallery', 'profile_image' => self::ALLOWED_IMAGE_TYPES,
+            'supporting_images' => ['image/jpeg', 'image/png'],
             'ppid_document', 'standar_pelayanan' => self::ALLOWED_DOCUMENT_TYPES,
             'media_library', 'default' => array_merge(
                 self::ALLOWED_IMAGE_TYPES,
@@ -497,9 +603,41 @@ class MediaService
     {
         $references = $this->findReferences($media);
         $count = count($references);
-        
+
         $media->update(['usage_count' => $count]);
-        
+
         return $count;
+    }
+
+    /**
+     * Get user-friendly file type descriptions.
+     *
+     * @param array $mimeTypes Array of MIME types
+     * @return string User-friendly description
+     */
+    private function getFriendlyFileTypes(array $mimeTypes): string
+    {
+        $typeMap = [
+            'image/jpeg' => 'JPG',
+            'image/png' => 'PNG',
+            'image/gif' => 'GIF',
+            'image/webp' => 'WebP',
+            'application/pdf' => 'PDF',
+            'application/msword' => 'Word',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'Word',
+            'application/vnd.ms-excel' => 'Excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'Excel',
+            'application/vnd.ms-powerpoint' => 'PowerPoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'PowerPoint',
+        ];
+
+        $friendlyTypes = [];
+        foreach ($mimeTypes as $mimeType) {
+            if (isset($typeMap[$mimeType])) {
+                $friendlyTypes[] = $typeMap[$mimeType];
+            }
+        }
+
+        return implode(', ', array_unique($friendlyTypes));
     }
 }

@@ -3,22 +3,22 @@ import { Link, usePage } from '@inertiajs/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/Components/ui/button'
 import {
-  Home01Icon,
-  File01Icon,
-  Image01Icon,
-  Document01Icon,
-  HelpCircleIcon,
-  ClipboardListIcon,
-  Building01Icon,
-  Menu01Icon,
-  FolderOpenIcon,
-  Users01Icon,
-  Activity01Icon,
-  Settings01Icon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  LockIcon,
-} from 'hugeicons-react'
+  Home,
+  Newspaper,
+  Image,
+  FileText,
+  HelpCircle,
+  ClipboardList,
+  Building2,
+  Menu as MenuIcon,
+  FolderOpen,
+  Users,
+  Activity,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+} from 'lucide-react'
 
 interface SidebarProps {
   collapsed: boolean
@@ -67,67 +67,67 @@ const menuItems: MenuItem[] = [
   { 
     label: 'Dashboard', 
     href: '/admin/dashboard', 
-    icon: <Home01Icon className="h-5 w-5" />,
+    icon: <Home className="h-5 w-5" />,
     roles: [] // All roles
   },
   { 
     label: 'Berita', 
     href: '/admin/berita', 
-    icon: <File01Icon className="h-5 w-5" />,
+    icon: <Newspaper className="h-5 w-5" />,
     roles: [] // All roles
   },
   { 
     label: 'Galeri', 
     href: '/admin/gallery', 
-    icon: <Image01Icon className="h-5 w-5" />,
+    icon: <Image className="h-5 w-5" />,
     roles: [] // All roles
   },
   { 
     label: 'PPID', 
     href: '/admin/ppid', 
-    icon: <Document01Icon className="h-5 w-5" />,
+    icon: <FileText className="h-5 w-5" />,
     roles: ['super_admin', 'admin'] // Admin only
   },
   { 
     label: 'SSD (FAQ)', 
     href: '/admin/ssd', 
-    icon: <HelpCircleIcon className="h-5 w-5" />,
+    icon: <HelpCircle className="h-5 w-5" />,
     roles: [] // All roles
   },
   { 
     label: 'Standar Pelayanan', 
     href: '/admin/standar-pelayanan', 
-    icon: <ClipboardListIcon className="h-5 w-5" />,
+    icon: <ClipboardList className="h-5 w-5" />,
     roles: ['super_admin', 'admin'] // Admin only
   },
   { 
     label: 'Profil', 
     href: '/admin/profile-content', 
-    icon: <Building01Icon className="h-5 w-5" />,
+    icon: <Building2 className="h-5 w-5" />,
     roles: ['super_admin', 'admin'] // Admin only
   },
   { 
     label: 'Menu', 
     href: '/admin/menu', 
-    icon: <Menu01Icon className="h-5 w-5" />,
+    icon: <MenuIcon className="h-5 w-5" />,
     roles: ['super_admin', 'admin'] // Admin only
   },
   { 
     label: 'Media Library', 
     href: '/admin/media', 
-    icon: <FolderOpenIcon className="h-5 w-5" />,
+    icon: <FolderOpen className="h-5 w-5" />,
     roles: [] // All roles
   },
   { 
     label: 'Pengguna', 
     href: '/admin/users', 
-    icon: <Users01Icon className="h-5 w-5" />,
+    icon: <Users className="h-5 w-5" />,
     roles: ['super_admin'] // Super admin only
   },
   { 
     label: 'Activity Log', 
     href: '/admin/activity-logs', 
-    icon: <Activity01Icon className="h-5 w-5" />,
+    icon: <Activity className="h-5 w-5" />,
     roles: ['super_admin', 'admin'] // Admin only
   },
 ]
@@ -206,7 +206,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           className="text-[var(--admin-primary-blue)] hover:bg-[var(--admin-glass-bg)]"
           style={{ transition: 'var(--admin-transition-normal)' }}
         >
-          {internalCollapsed ? <ChevronRightIcon className="h-5 w-5" /> : <ChevronLeftIcon className="h-5 w-5" />}
+          {internalCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </Button>
       </div>
 
@@ -237,7 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       {/* Lock icon for super admin only menus */}
                       {superAdminOnly && (
                         <span title="Super Admin Only">
-                          <LockIcon className="h-3.5 w-3.5 text-purple-400" />
+                          <Lock className="h-3.5 w-3.5 text-purple-400" />
                         </span>
                       )}
                     </>

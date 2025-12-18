@@ -31,3 +31,5 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         </div>
     );
 };
+
+export default PublicLayout;

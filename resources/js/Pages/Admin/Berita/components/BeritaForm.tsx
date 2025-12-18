@@ -26,6 +26,7 @@ import {
   Star,
   Upload
 } from 'lucide-react';
+import SupportingImagesUploader from '@/Components/Admin/SupportingImagesUploader';
 
 interface Berita {
   id: number;
@@ -42,6 +43,11 @@ interface Berita {
   lokasi: string | null;
   tanggal_rilis: string | null;
   biro: string | null;
+  galeri_foto_berita?: {
+    id: number;
+    file_path: string;
+    tipe: string;
+  }[];
 }
 
 interface Props {
@@ -53,7 +59,7 @@ export default function BeritaForm({ berita, categories }: Props) {
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [activeEditorField, setActiveEditorField] = useState<string | null>(null);
 
-  const { data, setData, post, put, processing, errors } = useForm({
+  const { data, setData, post, put, processing, errors, recentlySuccessful } = useForm({
     judul_utama: berita?.judul_utama || '',
     teras_berita: berita?.teras_berita || '',
     hero_image: berita?.hero_image || '',
@@ -66,6 +72,11 @@ export default function BeritaForm({ berita, categories }: Props) {
     lokasi: berita?.lokasi || 'Kendari',
     tanggal_rilis: berita?.tanggal_rilis || new Date().toISOString().split('T')[0],
     biro: berita?.biro || 'Biro Komunikasi dan Layanan Informasi',
+    supporting_images: berita?.galeri_foto_berita
+      ? berita.galeri_foto_berita
+          .filter((img) => img.tipe === 'gallery')
+          .map((img) => img.file_path)
+      : [],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -255,6 +266,26 @@ export default function BeritaForm({ berita, categories }: Props) {
                   }}
                 />
               </div>
+              <div className="mt-6">
+                <Label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
+                  Gambar Pendukung
+                  <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-1 rounded-full">Opsional</span>
+                </Label>
+                <p className="text-xs text-gray-500 mb-2">Tambahkan gambar pendukung untuk memperkaya konten berita (tidak wajib). Pilih dari Media Library atau unggah terlebih dahulu di halaman Media.</p>
+                <SupportingImagesUploader
+                  value={data.supporting_images as unknown as string[]}
+                  onChange={(next) => setData('supporting_images', next)}
+                />
+                {errors.supporting_images && (
+                  <p className="text-sm text-red-500 mt-1.5">{errors.supporting_images}</p>
+                )}
+                <p className="text-xs text-gray-400 mt-2">
+                  <svg className="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Gambar pendukung bersifat opsional, bisa ditambahkan nanti jika diperlukan
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -344,14 +375,16 @@ export default function BeritaForm({ berita, categories }: Props) {
                       <SelectValue placeholder="Pilih kategori" />
                     </SelectTrigger>
                     <SelectContent className="z-50 bg-white border shadow-lg">
-                      {categories.filter(cat => cat && cat.trim() !== '').map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                      {!categories.includes('Berita') && <SelectItem value="Berita">Berita</SelectItem>}
-                      {!categories.includes('Pengumuman') && <SelectItem value="Pengumuman">Pengumuman</SelectItem>}
-                      {!categories.includes('Kegiatan') && <SelectItem value="Kegiatan">Kegiatan</SelectItem>}
+                      {categories
+                        .filter((cat) => cat && cat.trim() !== '' && cat.trim().toLowerCase() === 'berita')
+                        .map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      {!categories.some((c) => c.toLowerCase() === 'berita') && (
+                        <SelectItem value="Berita">Berita</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

@@ -45,11 +45,6 @@
     @routes
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
 
-    <!-- PPID Error Fix Script -->
-    @if(str_contains(request()->path(), 'ppid'))
-        <script src="{{ asset('js/ppid-fix.js') }}" defer></script>
-    @endif
-
     @inertiaHead
 </head>
 

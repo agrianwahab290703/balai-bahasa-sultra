@@ -6,7 +6,7 @@ import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
-import { Plus, Eye, Pencil, Trash2, FileText, Check, X, Image } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, FileText, Check, X, Image, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
 
 interface ProfileContent {
   id: number;
@@ -85,8 +85,31 @@ export default function Index({ contents, filters, contentTypes, statistics }: P
       key: 'order',
       label: 'Urutan',
       sortable: true,
-      render: (value) => (
-        <span className="text-muted-foreground">{value as number}</span>
+      render: (_, row) => (
+        <div className="flex items-center gap-1">
+          <GripVertical className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium text-gray-700 w-8">{row.order}</span>
+          <div className="flex flex-col">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-gray-100"
+              onClick={() => moveItem(row.id, 'up')}
+              title="Pindah ke atas"
+            >
+              <ChevronUp className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-gray-100"
+              onClick={() => moveItem(row.id, 'down')}
+              title="Pindah ke bawah"
+            >
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
       ),
     },
     {
@@ -114,26 +137,32 @@ export default function Index({ contents, filters, contentTypes, statistics }: P
     },
     {
       key: 'actions',
-      label: '',
+      label: 'Aksi',
       render: (_, row) => (
-        <div className="flex items-center gap-1 justify-end">
-          <Button variant="ghost" size="icon" asChild>
+        <div className="flex items-center gap-2 justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            title="Lihat Detail"
+            className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
+          >
             <Link href={route('admin.profile-content.show', row.id)}>
-              <Eye className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={route('admin.profile-content.edit', row.id)}>
-              <Pencil className="h-4 w-4" />
+              <Eye className="h-4 w-4 mr-1" />
+              Lihat
             </Link>
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            onClick={() => handleDelete(row.id)}
+            variant="outline"
+            size="sm"
+            asChild
+            title="Edit Konten"
+            className="border-amber-200 text-amber-600 hover:bg-amber-50 hover:border-amber-300"
           >
-            <Trash2 className="h-4 w-4" />
+            <Link href={route('admin.profile-content.edit', row.id)}>
+              <Pencil className="h-4 w-4 mr-1" />
+              Edit
+            </Link>
           </Button>
         </div>
       ),
@@ -178,18 +207,19 @@ export default function Index({ contents, filters, contentTypes, statistics }: P
     },
   ];
 
-  const handleDelete = useCallback((id: number) => {
-    if (confirm('Hapus konten ini?')) {
-      router.delete(route('admin.profile-content.destroy', id));
-    }
-  }, []);
-
   const handleBulkAction = useCallback((action: string, ids: (number | string)[]) => {
     router.post(route('admin.profile-content.bulk-action'), {
       action,
       ids,
     });
   }, []);
+
+  const moveItem = (id: number, direction: 'up' | 'down') => {
+    router.post(route('admin.profile-content.reorder'), {
+      id,
+      direction,
+    });
+  };
 
   const handleTypeFilter = useCallback((type: string) => {
     // Prevent unnecessary requests if same type is selected
@@ -265,6 +295,33 @@ export default function Index({ contents, filters, contentTypes, statistics }: P
                 </Link>
               </Button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Navigation Menu */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-8">
+        <div className="w-full overflow-x-auto pb-2">
+          <div className="flex flex-nowrap sm:flex-wrap items-center gap-3 min-w-max sm:min-w-0">
+            <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Menu Cepat:</span>
+            <Link
+              href={route('admin.dashboard')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              Dashboard
+            </Link>
+            <Link
+              href={route('admin.media.index')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Media Files
+            </Link>
           </div>
         </div>
       </div>
@@ -363,55 +420,59 @@ export default function Index({ contents, filters, contentTypes, statistics }: P
                 </div>
               </div>
             )}
-            <TabsList className="h-auto p-1 bg-transparent w-full justify-start flex-wrap gap-2">
-              <TabsTrigger
-                value="all"
-                disabled={isFiltering}
-                className="px-6 py-3 rounded-2xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-100/50 data-[state=active]:text-blue-600 data-[state=active]:border-blue-200 bg-gray-100/50 text-gray-600 border border-transparent transition-all duration-300 hover:bg-gray-100/70"
-              >
-                <div className="flex items-center gap-2">
-                  <span>Semua Konten</span>
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
-                </div>
-              </TabsTrigger>
-              {Object.entries(contentTypes).map(([key, label]) => (
+            <div className="w-full overflow-x-auto pb-2">
+              <TabsList className="h-auto p-1 bg-transparent min-w-max flex-nowrap sm:flex-wrap w-full justify-start gap-2">
                 <TabsTrigger
-                  key={key}
-                  value={key}
+                  value="all"
                   disabled={isFiltering}
-                  className="px-6 py-3 rounded-2xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-100/50 data-[state=active]:text-blue-600 data-[state=active]:border-blue-200 bg-gray-100/50 text-gray-600 border border-transparent transition-all duration-300 hover:bg-gray-100/70"
+                  className="px-6 py-3 rounded-2xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-100/50 data-[state=active]:text-blue-600 data-[state=active]:border-blue-200 bg-gray-100/50 text-gray-600 border border-transparent transition-all duration-300 hover:bg-gray-100/70 whitespace-nowrap"
                 >
                   <div className="flex items-center gap-2">
-                    <span>{label}</span>
-                    {statistics[key]?.total > 0 && (
-                      <div className="w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold flex items-center justify-center">
-                        {statistics[key]?.total}
-                      </div>
-                    )}
+                    <span>Semua Konten</span>
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
                   </div>
                 </TabsTrigger>
-              ))}
-            </TabsList>
+                {Object.entries(contentTypes).map(([key, label]) => (
+                  <TabsTrigger
+                    key={key}
+                    value={key}
+                    disabled={isFiltering}
+                    className="px-6 py-3 rounded-2xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-100/50 data-[state=active]:text-blue-600 data-[state=active]:border-blue-200 bg-gray-100/50 text-gray-600 border border-transparent transition-all duration-300 hover:bg-gray-100/70 whitespace-nowrap"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{label}</span>
+                      {statistics[key]?.total > 0 && (
+                        <div className="w-5 h-5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold flex items-center justify-center">
+                          {statistics[key]?.total}
+                        </div>
+                      )}
+                    </div>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
           </div>
 
-          <TabsContent value={selectedType} className="p-8">
-            <div className="bg-white/60 backdrop-blur-sm border border-white/50 rounded-2xl p-6 shadow-inner">
-              <DataTable
-                data={contents}
-                columns={columns}
-                searchable
-                searchPlaceholder="Cari konten..."
-                searchValue={filters.search}
-                filters={filterConfigs}
-                filterValues={{ type: selectedType === 'all' ? '' : selectedType, status: filters.status }}
-                bulkActions={bulkActions}
-                sortColumn={filters.sort}
-                sortDirection={filters.direction as 'asc' | 'desc'}
-                baseUrl={route('admin.profile-content.index')}
-                onBulkAction={handleBulkAction}
-                emptyMessage="Belum ada konten profil"
-                className="data-table-modern"
-              />
+          <TabsContent value={selectedType} className="p-4 sm:p-8">
+            <div className="bg-white/60 backdrop-blur-sm border border-white/50 rounded-2xl p-4 sm:p-6 shadow-inner">
+              <div className="overflow-x-auto">
+                <DataTable
+                  data={contents}
+                  columns={columns}
+                  searchable
+                  searchPlaceholder="Cari konten..."
+                  searchValue={filters.search}
+                  filters={filterConfigs}
+                  filterValues={{ type: selectedType === 'all' ? '' : selectedType, status: filters.status }}
+                  bulkActions={bulkActions}
+                  sortColumn={filters.sort}
+                  sortDirection={filters.direction as 'asc' | 'desc'}
+                  baseUrl={route('admin.profile-content.index')}
+                  onBulkAction={handleBulkAction}
+                  emptyMessage="Belum ada konten profil"
+                  className="data-table-modern"
+                />
+              </div>
             </div>
           </TabsContent>
         </Tabs>

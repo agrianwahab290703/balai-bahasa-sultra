@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class StandarPelayanan extends Model
 {
@@ -24,13 +26,15 @@ class StandarPelayanan extends Model
     protected $fillable = [
         'title',
         'description',
-        'category',
         'url',
+        'external_url',
+        'document_type',
         'file_type',
         'file_size',
         'download_count',
         'sort_order',
         'is_active',
+        'last_downloaded_at',
     ];
 
     /**
@@ -43,58 +47,17 @@ class StandarPelayanan extends Model
         'download_count' => 'integer',
         'sort_order' => 'integer',
         'is_active' => 'boolean',
+        'last_downloaded_at' => 'datetime',
     ];
 
-    /**
-     * Category constants
-     */
-    const CATEGORY_UMUM = 'Umum';
-    const CATEGORY_UKBI = 'UKBI';
-    const CATEGORY_BIPA = 'BIPA';
-    const CATEGORY_AHLI_BAHASA = 'Ahli Bahasa';
-    const CATEGORY_PENERJEMAH = 'Penerjemah';
-    const CATEGORY_PERPUSTAKAAN = 'Perpustakaan';
-    const CATEGORY_DATA = 'Data & Informasi';
+    protected $appends = [
+        'is_external',
+        'public_url',
+    ];
 
-    /**
-     * Get all available categories
-     *
-     * @return array<string>
-     */
-    public static function getCategories(): array
-    {
-        return [
-            self::CATEGORY_UMUM,
-            self::CATEGORY_UKBI,
-            self::CATEGORY_BIPA,
-            self::CATEGORY_AHLI_BAHASA,
-            self::CATEGORY_PENERJEMAH,
-            self::CATEGORY_PERPUSTAKAAN,
-            self::CATEGORY_DATA,
-        ];
-    }
-
-    /**
-     * Scope to filter active records
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope to filter by category
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeByCategory($query, string $category)
-    {
-        return $query->where('category', $category);
     }
 
     /**
@@ -108,6 +71,42 @@ class StandarPelayanan extends Model
         return $query->orderBy('sort_order');
     }
 
+    public function getIsExternalAttribute(): bool
+    {
+        if (($this->attributes['document_type'] ?? 'file') === 'link') {
+            return true;
+        }
+
+        if (!empty($this->attributes['external_url'])) {
+            return true;
+        }
+
+        $url = $this->attributes['url'] ?? null;
+
+        if (!$url) {
+            return false;
+        }
+
+        return Str::startsWith(strtolower($url), ['http://', 'https://']);
+    }
+
+    public function getPublicUrlAttribute(): ?string
+    {
+        if (($this->document_type ?? 'file') === 'link') {
+            return $this->external_url;
+        }
+
+        if (!$this->url) {
+            return null;
+        }
+
+        if ($this->is_external) {
+            return $this->url;
+        }
+
+        return Storage::disk('public')->url($this->url);
+    }
+
     /**
      * Increment download count
      *
@@ -115,7 +114,9 @@ class StandarPelayanan extends Model
      */
     public function incrementDownloadCount(): bool
     {
-        return $this->increment('download_count');
+        return $this->increment('download_count', 1, [
+            'last_downloaded_at' => now(),
+        ]);
     }
 
     /**

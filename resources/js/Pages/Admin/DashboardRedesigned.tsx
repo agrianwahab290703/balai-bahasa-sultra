@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Clock,
   AlertCircle,
+  Bell,
   ChevronRight,
   ChevronLeft,
   Search,
@@ -756,6 +757,12 @@ export default function DashboardRedesigned({
                     label="Tambah Berita"
                     icon={<LontarIcon className="h-4 w-4" />}
                     href="/admin/berita/create"
+                  />
+                  <QuickActionButton
+                    label="Tambah Pengumuman"
+                    icon={<Bell className="h-4 w-4" />}
+                    href="/admin/pengumuman/create"
+                    variant="secondary"
                   />
                   <QuickActionButton
                     label="Upload Foto"

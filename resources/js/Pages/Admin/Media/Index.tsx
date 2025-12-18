@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -83,6 +83,8 @@ interface PageProps {
     search: string;
     type: string;
   };
+  csrf_token?: string;
+  [key: string]: unknown;
 }
 
 
@@ -109,6 +111,9 @@ function isImage(mimeType: string): boolean {
  * @see Requirements 8.1, 8.3
  */
 export default function MediaIndex({ media, filters }: PageProps) {
+  const { props } = usePage<PageProps & { csrf_token: string }>();
+  const csrfToken = props.csrf_token || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
@@ -119,6 +124,7 @@ export default function MediaIndex({ media, filters }: PageProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<MediaItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -151,89 +157,199 @@ export default function MediaIndex({ media, filters }: PageProps) {
   }, [searchQuery]);
 
   /**
+   * Get fresh CSRF token from meta tag, cookie, or API
+   */
+  const getFreshCsrfToken = useCallback(async (): Promise<string> => {
+    // First try meta tag (most reliable for same-page requests)
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (metaToken) return metaToken;
+    
+    // Then try XSRF cookie
+    const xsrfCookie = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('XSRF-TOKEN='))
+      ?.split('=')[1];
+    if (xsrfCookie) {
+      try {
+        return decodeURIComponent(xsrfCookie);
+      } catch {}
+    }
+    
+    // Try to fetch fresh token from API
+    try {
+      const response = await fetch('/admin/media/csrf-token', {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.csrf_token) return data.csrf_token;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch fresh CSRF token:', e);
+    }
+    
+    // Fallback to props
+    return csrfToken;
+  }, [csrfToken]);
+
+  /**
    * Handle file upload
    */
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    setIsUploading(true);
-    setUploadProgress(0);
+    const MAX_SIZE = 10 * 1024 * 1024;
+    const ALLOWED_TYPES = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    let uploaded = 0;
+    const validFiles: File[] = [];
     const errors: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
-      const formData = new FormData();
-      formData.append('file', files[i]);
-      formData.append('context', 'media_library');
-
-      try {
-        const response = await fetch('/admin/media/upload', {
-          method: 'POST',
-          headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'Accept': 'application/json',
-          },
-          body: formData,
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          const errorMsg = result.error || `Upload failed with status ${response.status}`;
-          console.error('Upload failed:', result);
-          errors.push(`File "${files[i].name}": ${errorMsg}`);
-        } else if (!result.success) {
-          console.error('Upload failed:', result);
-          errors.push(`File "${files[i].name}": ${result.error || 'Unknown error'}`);
-        } else {
-          uploaded++;
-          console.log('Upload successful:', result);
-        }
-      } catch (error) {
-        console.error('Upload error:', error);
-        errors.push(`File "${files[i].name}": Network error`);
+      const file = files[i];
+      if (file.size > MAX_SIZE) {
+        errors.push(`File "${file.name}" exceeds 10MB limit.`);
+        continue;
       }
+      if (file.type && !ALLOWED_TYPES.includes(file.type)) {
+        errors.push(`File "${file.name}" has an unsupported format (${file.type}).`);
+        continue;
+      }
+      validFiles.push(file);
+    }
 
-      setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+    if (errors.length > 0) {
+      alert(errors.join('\n'));
+      if (validFiles.length === 0) return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    // Get fresh CSRF token
+    const freshToken = await getFreshCsrfToken();
+    
+    if (!freshToken) {
+      console.error('CSRF token not found');
+      alert('Session expired. Please refresh the page and try again.');
+      setIsUploading(false);
+      return;
+    }
+
+    let uploaded = 0;
+    const uploadErrors: string[] = [];
+
+    for (let i = 0; i < validFiles.length; i++) {
+      await new Promise<void>((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/admin/media/upload', true);
+        xhr.withCredentials = true;
+        
+        // Set headers - use fresh token
+        xhr.setRequestHeader('X-CSRF-TOKEN', freshToken);
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        
+        // Also try XSRF token from cookie
+        const xsrfCookie = document.cookie
+          .split('; ')
+          .find((row) => row.startsWith('XSRF-TOKEN='))
+          ?.split('=')[1];
+        if (xsrfCookie) {
+          try {
+            xhr.setRequestHeader('X-XSRF-TOKEN', decodeURIComponent(xsrfCookie));
+          } catch {}
+        }
+
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 4) {
+            // Handle authentication errors (401)
+            if (xhr.status === 401) {
+              uploadErrors.push(`File "${validFiles[i].name}": Session expired. Please login again.`);
+              setUploadProgress(Math.round(((i + 1) / validFiles.length) * 100));
+              resolve();
+              return;
+            }
+            
+            // Handle 419 CSRF error specifically
+            if (xhr.status === 419) {
+              uploadErrors.push(`File "${validFiles[i].name}": Session expired (CSRF token mismatch). Please refresh the page.`);
+              setUploadProgress(Math.round(((i + 1) / validFiles.length) * 100));
+              resolve();
+              return;
+            }
+            
+            try {
+              const result = JSON.parse(xhr.responseText || '{}');
+              if (xhr.status >= 200 && xhr.status < 300 && result.success) {
+                uploaded++;
+              } else {
+                const errorMsg = result.error || result.message || `Upload failed with status ${xhr.status}`;
+                uploadErrors.push(`File "${validFiles[i].name}": ${errorMsg}`);
+              }
+            } catch (err) {
+              // If response is not JSON, it might be a redirect (session expired)
+              if (xhr.status === 419 || xhr.status === 401 || xhr.responseURL?.includes('login')) {
+                uploadErrors.push(`File "${validFiles[i].name}": Session expired. Please refresh the page.`);
+              } else {
+                uploadErrors.push(`File "${validFiles[i].name}": Invalid server response (status: ${xhr.status})`);
+              }
+            }
+            setUploadProgress(Math.round(((i + 1) / validFiles.length) * 100));
+            resolve();
+          }
+        };
+
+        xhr.onerror = () => {
+          uploadErrors.push(`File "${validFiles[i].name}": Network error`);
+          setUploadProgress(Math.round(((i + 1) / validFiles.length) * 100));
+          resolve();
+        };
+
+        const formData = new FormData();
+        formData.append('file', validFiles[i]);
+        formData.append('context', 'media_library');
+        formData.append('_token', freshToken);
+        xhr.send(formData);
+      });
     }
 
     setIsUploading(false);
     setShowUploadModal(false);
 
-    // Show success/error messages
     if (uploaded > 0) {
-      const message = uploaded === 1
-        ? '1 file uploaded successfully'
-        : `${uploaded} files uploaded successfully`;
-
-      if (errors.length > 0) {
-        console.warn('Some files had errors:', errors);
-      }
-
-      // Refresh the page data without full reload
       router.get('/admin/media', {
         search: searchQuery || '',
         type: typeFilter || '',
       }, {
-        preserveState: false, // Reset state to get fresh data
+        preserveState: false,
         preserveScroll: false,
-        onSuccess: () => {
-          // Optional: Show success message
-          if (errors.length === 0) {
-            // All files uploaded successfully
-          } else {
-            // Some files had errors - could show a toast here
-          }
-        },
       });
     } else {
-      // All uploads failed
-      console.error('All uploads failed:', errors);
-      // Could show error toast here
+      console.error('All uploads failed:', uploadErrors);
+      // Check if it's a session/CSRF issue
+      if (uploadErrors.some(e => e.includes('Session expired') || e.includes('419'))) {
+        if (confirm('Your session may have expired. Would you like to refresh the page?')) {
+          window.location.reload();
+        }
+      } else {
+        alert(uploadErrors.join('\n'));
+      }
     }
-  }, [searchQuery, typeFilter, router]);
+  }, [searchQuery, typeFilter, router, getFreshCsrfToken]);
 
 
   /**
@@ -260,63 +376,77 @@ export default function MediaIndex({ media, filters }: PageProps) {
   }, [selectedItems.length, media.data]);
 
   /**
-   * Handle bulk delete
+   * Execute Delete (Bulk or Single)
    */
-  const handleBulkDelete = useCallback(async () => {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
+  const executeDelete = useCallback(async () => {
     try {
-      const response = await fetch('/admin/media/bulk-delete', {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ids: selectedItems }),
-      });
+      if (itemToDelete) {
+        // Single delete
+        const response = await fetch(`/admin/media/${itemToDelete.id}`, {
+          method: 'DELETE',
+          headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          credentials: 'include',
+        });
 
-      const result = await response.json();
+        const result = await response.json();
 
-      if (result.failed && result.failed.length > 0) {
-        setDeleteError(`${result.deleted} file(s) deleted. ${result.failed.length} file(s) could not be deleted because they are in use.`);
+        if (!result.success) {
+          setDeleteError(result.error || 'Failed to delete file');
+          // Keep modal open
+        } else {
+          setShowDeleteModal(false);
+          setItemToDelete(null);
+          router.reload({ only: ['media'] });
+        }
       } else {
-        setShowDeleteModal(false);
-        setSelectedItems([]);
-        router.reload({ only: ['media'] });
+        // Bulk delete
+        const response = await fetch('/admin/media/bulk-delete', {
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: JSON.stringify({ ids: selectedItems }),
+          credentials: 'include',
+        });
+
+        const result = await response.json();
+
+        if (result.failed && result.failed.length > 0) {
+          setDeleteError(`${result.deleted} file(s) deleted. ${result.failed.length} file(s) could not be deleted because they are in use.`);
+        } else {
+          setShowDeleteModal(false);
+          setSelectedItems([]);
+          router.reload({ only: ['media'] });
+        }
       }
     } catch (error) {
       setDeleteError('Failed to delete files');
     }
-  }, [selectedItems]);
+  }, [selectedItems, itemToDelete, csrfToken]);
 
   /**
-   * Handle single delete
+   * Handle bulk delete button click
    */
-  const handleDelete = useCallback(async (item: MediaItem) => {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  const handleBulkDeleteClick = useCallback(() => {
+    setItemToDelete(null);
+    setDeleteError(null);
+    setShowDeleteModal(true);
+  }, []);
 
-    try {
-      const response = await fetch(`/admin/media/${item.id}`, {
-        method: 'DELETE',
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'Accept': 'application/json',
-        },
-      });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        setDeleteError(result.error || 'Failed to delete file');
-        setShowDeleteModal(true);
-      } else {
-        router.reload({ only: ['media'] });
-      }
-    } catch (error) {
-      setDeleteError('Failed to delete file');
-      setShowDeleteModal(true);
-    }
+  /**
+   * Handle single delete button click
+   */
+  const handleDeleteClick = useCallback((item: MediaItem) => {
+    setItemToDelete(item);
+    setDeleteError(null);
+    setShowDeleteModal(true);
   }, []);
 
   /**
@@ -376,18 +506,59 @@ export default function MediaIndex({ media, filters }: PageProps) {
                 <span className="font-semibold text-purple-600 mx-1">terorganisir</span>
               </p>
             </div>
-
-            <div className="flex gap-3">
-              <Button
-                onClick={() => setShowUploadModal(true)}
-                className="group relative overflow-hidden bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-500 hover:shadow-xl hover:shadow-blue-200/50 px-8 py-4 rounded-2xl font-medium text-lg"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <CloudUpload className="h-5 w-5 mr-3 relative z-10" />
-                <span className="relative z-10">Upload Files</span>
-              </Button>
-            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Quick Navigation Menu */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-gray-500">Menu Cepat:</span>
+          <Link
+            href={route('admin.dashboard')}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Dashboard
+          </Link>
+          <Link
+            href={route('admin.berita.create')}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-4m-1-4H8m4 0v6m0-6V5a2 2 0 012-2h8a2 2 0 012 2v6m0-6H4" />
+            </svg>
+            Tambah Berita
+          </Link>
+          <Link
+            href={route('admin.pengumuman.create')}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01.417.075l1.581 1.581a1.76 1.76 0 012.365.068 1.68.015 11.6-11.6 2.365.316.454.295.789.398.252.563.105.102.252-.232.272-.596.965-.383.463-.645-.535-.974.678-1.17.41-.55.815-.863.926-1.418.59-2.535-.326-.822-.168-1.5-.987.308a1.721 1.721 0 00-1.411-.702l-2.74-5.47a1.692 1.692 0 00-1.712.296M2.41 19.511a1.726 1.726 0 00-1.917.869l-2.55-2.421a1.696 1.696 0 00-1.712.847l1.581 1.581a1.76 1.76 0 002.365.068 1.68.015 11.6-11.6 2.365.316.454.295.789.398.252.563.105.102.252-.232.272-.596.965-.383.463-.645-.535-.974.678-1.17.41-.55.815-.863.926-1.418.59-2.535-.326-.822-.168-1.5-.987.308a1.721 1.721 0 00-1.411-.702l-2.74-5.47a1.692 1.692 0 00-1.712.296M2.41 19.511a1.726 1.726 0 00-1.917.869l-2.55-2.421a1.696 1.696 0 00-1.712.847l1.581 1.581a1.76 1.76 0 002.365.068 1.68.015 11.6-11.6 2.365.316.454.295.789.398.252.563.105.102.252-.232.272-.596.965-.383.463-.645-.535-.974.678-1.17.41-.55.815-.863.926-1.418.59-2.535-.326-.822-.168-1.5-.987.308a1.721 1.721 0 00-1.411-.702l-2.74-5.47a1.692 1.692 0 00-1.712.296" />
+            </svg>
+            Tambah Pengumuman
+          </Link>
+          <Link
+            href={route('admin.gallery.create')}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Tambah Galeri
+          </Link>
+          <Link
+            href={route('admin.ppid.create')}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.707.293L15 11M3 12a3 3 0 106 0 3 3 0 00-3-3m-6-2a3 3 0 110-6 0 3 3 0 00-3 3m8 8a1 1 0 01-1.414-1.414L13 13l.586.586a1 1 0 01-1.707 0L11 11.414z" />
+            </svg>
+            Tambah PPID
+          </Link>
         </div>
       </div>
 
@@ -604,7 +775,7 @@ export default function MediaIndex({ media, filters }: PageProps) {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => setShowDeleteModal(true)}
+                onClick={handleBulkDeleteClick}
                 className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 hover:shadow-lg hover:shadow-red-100/50 px-4 py-2 rounded-xl"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -640,7 +811,7 @@ export default function MediaIndex({ media, filters }: PageProps) {
                   selected={selectedItems.includes(item.id)}
                   onSelect={() => handleSelectItem(item.id)}
                   onView={() => handleViewDetails(item)}
-                  onDelete={() => handleDelete(item)}
+                  onDelete={() => handleDeleteClick(item)}
                 />
               ))}
             </div>
@@ -670,7 +841,7 @@ export default function MediaIndex({ media, filters }: PageProps) {
                 selected={selectedItems.includes(item.id)}
                 onSelect={() => handleSelectItem(item.id)}
                 onView={() => handleViewDetails(item)}
-                onDelete={() => handleDelete(item)}
+                onDelete={() => handleDeleteClick(item)}
               />
             ))}
           </div>
@@ -908,7 +1079,7 @@ export default function MediaIndex({ media, filters }: PageProps) {
               <p className="text-center text-gray-800">
                 Are you sure you want to delete{' '}
                 <span className="font-bold text-red-600">
-                  {selectedItems.length} file{selectedItems.length !== 1 ? 's' : ''}
+                  {itemToDelete ? `"${itemToDelete.filename}"` : `${selectedItems.length} file${selectedItems.length !== 1 ? 's' : ''}`}
                 </span>
                 ?
               </p>
@@ -927,6 +1098,7 @@ export default function MediaIndex({ media, filters }: PageProps) {
               onClick={() => {
                 setShowDeleteModal(false);
                 setDeleteError(null);
+                setItemToDelete(null);
               }}
               className="bg-white/60 backdrop-blur-sm border-2 border-gray-200 hover:border-gray-300 hover:bg-white hover:shadow-md hover:shadow-gray-100/50 px-6 py-2 rounded-xl font-medium transition-all duration-300"
             >
@@ -934,11 +1106,11 @@ export default function MediaIndex({ media, filters }: PageProps) {
             </Button>
             <Button
               variant="destructive"
-              onClick={handleBulkDelete}
+              onClick={executeDelete}
               className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 hover:shadow-lg hover:shadow-red-100/50 px-6 py-2 rounded-xl font-medium"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              Confirm Delete
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
+import { useEffect } from 'react';
 
 export default function Login() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -7,23 +8,63 @@ export default function Login() {
         password: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [debugInfo, setDebugInfo] = useState('');
+
+    // Add debug info on component mount
+    useEffect(() => {
+        console.log('Login component mounted');
+        console.log('Current URL:', window.location.href);
+        console.log('CSRF Token:', document.querySelector('meta[name="csrf-token"]')?.content);
+
+        // Test direct fetch
+        fetch('/admin/login', {
+            method: 'GET',
+            headers: {
+                'Accept': 'text/html',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(response => {
+            console.log('GET login page status:', response.status);
+            setDebugInfo(`GET Status: ${response.status}, OK: ${response.ok}`);
+        }).catch(error => {
+            console.error('GET error:', error);
+            setDebugInfo(`GET Error: ${error.message}`);
+        });
+    }, []);
 
     const submit = (e) => {
         e.preventDefault();
-        
+
+        console.log('Login form submitted');
+        console.log('Form data:', data);
+
         if (isSubmitting) return;
         setIsSubmitting(true);
-        
+
+        // Add debug before sending
+        console.log('Sending login request...');
+        console.log('Form data:', JSON.stringify(data, null, 2));
+
         post('/admin/login', {
             preserveScroll: true,
-            onSuccess: () => {
-                // Redirect will be handled by server
+            onStart: () => {
+                console.log('Request started...');
+            },
+            onSuccess: (page) => {
+                console.log('Login successful! Page:', page);
+                console.log('URL:', window.location.href);
+                // Check if redirected
+                if (window.location.href.includes('/dashboard')) {
+                    console.log('Successfully redirected to dashboard');
+                }
             },
             onError: (errors) => {
+                console.error('Login errors:', errors);
                 reset('password');
                 setIsSubmitting(false);
             },
             onFinish: () => {
+                console.log('Login request finished');
                 setIsSubmitting(false);
             },
         });
@@ -42,6 +83,11 @@ export default function Login() {
                         <p className="mt-2 text-center text-sm text-gray-600">
                             Balai Bahasa Provinsi Sulawesi Tenggara
                         </p>
+                        {debugInfo && (
+                            <div className="mt-2 text-xs text-gray-500 text-center">
+                                Debug: {debugInfo}
+                            </div>
+                        )}
                     </div>
                     
                     <form className="mt-8 space-y-6" onSubmit={submit}>

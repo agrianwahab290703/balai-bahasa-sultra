@@ -150,7 +150,7 @@ Route::prefix('terbitan/hasil-penelitian')->name('terbitan.hasil-penelitian.')->
 
 // PPID (Pejabat Pengelola Informasi dan Dokumentasi)
 Route::prefix('ppid')->name('ppid.')->group(function () {
-    Route::get('/', [PpidController::class, 'profil'])->name('profil');
+    Route::get('/', [PpidController::class, 'index'])->name('index');
     Route::get('/profil', [PpidController::class, 'profil'])->name('profil');
     Route::get('/informasi-publik', [PpidController::class, 'informasiPublik'])->name('informasi-publik');
     Route::get('/informasi-publik/setiap-saat', [PpidController::class, 'informasiSetiapSaat'])->name('informasi-publik.setiap-saat');
@@ -161,6 +161,8 @@ Route::prefix('ppid')->name('ppid.')->group(function () {
     Route::get('/pengajuan-keberatan', [PpidController::class, 'pengajuanKeberatan'])->name('pengajuan-keberatan');
     Route::post('/pengajuan-keberatan', [PpidController::class, 'storeKeberatan'])->name('pengajuan-keberatan.store');
     Route::get('/download/{id}', [PpidController::class, 'downloadDocument'])->name('download');
+    // Dynamic content route - must be last to avoid catching other routes
+    Route::get('/konten/{slug}', [PpidController::class, 'showContent'])->name('content.show');
 });
 
 // Dashboard Routes (will add later)

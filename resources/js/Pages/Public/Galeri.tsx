@@ -79,7 +79,7 @@ export default function Galeri({ galleries = [], categories = [] }: GaleriProps)
 
 
             {/* Category Filter */}
-            <section className="bg-white py-8 border-b sticky top-[128px] z-40 shadow-sm">
+            <section className="bg-white py-8 border-b shadow-sm">
                 <div className="container mx-auto px-4">
                     <div className="flex gap-2 flex-wrap justify-center">
                         <Button 

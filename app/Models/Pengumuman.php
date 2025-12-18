@@ -21,12 +21,14 @@ class Pengumuman extends Model
         'status',
         'prioritas',
         'meta_description',
+        'gallery_images',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
         'tanggal_berlaku' => 'date',
+        'gallery_images' => 'array',
     ];
 
     public function creator()

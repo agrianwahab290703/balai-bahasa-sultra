@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\GalleryController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\PengumumanController;
+use App\Http\Controllers\Admin\PpidContentController;
 use App\Http\Controllers\Admin\PpidDocumentController;
 use App\Http\Controllers\Admin\ProfileContentController;
 use App\Http\Controllers\Admin\SearchController;
@@ -42,6 +43,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('media')->name('media.')->group(function () {
             Route::get('/', [MediaController::class, 'index'])->name('index');
             Route::post('/upload', [MediaController::class, 'upload'])->name('upload');
+            Route::get('/csrf-token', function () {
+                return response()->json(['csrf_token' => csrf_token()]);
+            })->name('csrf-token');
             Route::get('/{media}', [MediaController::class, 'show'])->name('show');
             Route::delete('/{media}', [MediaController::class, 'destroy'])->name('destroy');
             Route::post('/bulk-delete', [MediaController::class, 'bulkDelete'])->name('bulk-delete');
@@ -74,7 +78,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/bulk-action', [GalleryController::class, 'bulkAction'])->name('bulk-action');
         });
 
-        // PPID Document routes
+        // PPID Document routes (for file uploads)
         Route::prefix('ppid')->name('ppid.')->group(function () {
             Route::get('/', [PpidDocumentController::class, 'index'])->name('index');
             Route::get('/create', [PpidDocumentController::class, 'create'])->name('create');
@@ -86,6 +90,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{ppid}/download', [PpidDocumentController::class, 'download'])->name('download');
             Route::post('/{ppid}/toggle-active', [PpidDocumentController::class, 'toggleActive'])->name('toggle-active');
             Route::post('/bulk-action', [PpidDocumentController::class, 'bulkAction'])->name('bulk-action');
+        });
+
+        // PPID Content routes (for rich text content with hierarchical structure)
+        Route::prefix('ppid-content')->name('ppid-content.')->group(function () {
+            Route::get('/', [PpidContentController::class, 'index'])->name('index');
+            Route::get('/create', [PpidContentController::class, 'create'])->name('create');
+            Route::post('/', [PpidContentController::class, 'store'])->name('store');
+            Route::get('/{ppidContent}', [PpidContentController::class, 'show'])->name('show');
+            Route::get('/{ppidContent}/edit', [PpidContentController::class, 'edit'])->name('edit');
+            Route::put('/{ppidContent}', [PpidContentController::class, 'update'])->name('update');
+            Route::delete('/{ppidContent}', [PpidContentController::class, 'destroy'])->name('destroy');
+            Route::post('/reorder', [PpidContentController::class, 'reorder'])->name('reorder');
+            Route::post('/{ppidContent}/toggle-active', [PpidContentController::class, 'toggleActive'])->name('toggle-active');
+            Route::post('/bulk-action', [PpidContentController::class, 'bulkAction'])->name('bulk-action');
         });
 
         // SSD (FAQ) routes
@@ -122,11 +140,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [ProfileContentController::class, 'index'])->name('index');
             Route::get('/create', [ProfileContentController::class, 'create'])->name('create');
             Route::post('/', [ProfileContentController::class, 'store'])->name('store');
+            Route::post('/fix-orders', [ProfileContentController::class, 'fixOrders'])->name('fix-orders');
             Route::get('/{profileContent}', [ProfileContentController::class, 'show'])->name('show');
             Route::get('/{profileContent}/edit', [ProfileContentController::class, 'edit'])->name('edit');
             Route::put('/{profileContent}', [ProfileContentController::class, 'update'])->name('update');
             Route::delete('/{profileContent}', [ProfileContentController::class, 'destroy'])->name('destroy');
-            Route::post('/reorder', [ProfileContentController::class, 'reorder'])->name('reorder');
+            Route::post('/reorder', [ProfileContentController::class, 'moveUpDown'])->name('reorder');
             Route::post('/{profileContent}/toggle-active', [ProfileContentController::class, 'toggleActive'])->name('toggle-active');
             Route::post('/bulk-action', [ProfileContentController::class, 'bulkAction'])->name('bulk-action');
         });

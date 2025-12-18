@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -47,8 +49,8 @@ class BeritaController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('judul_utama', 'like', "%{$search}%")
-                  ->orWhere('teras_berita', 'like', "%{$search}%")
-                  ->orWhere('kategori', 'like', "%{$search}%");
+                    ->orWhere('teras_berita', 'like', "%{$search}%")
+                    ->orWhere('kategori', 'like', "%{$search}%");
             });
         }
 
@@ -77,7 +79,7 @@ class BeritaController extends Controller
         $sortColumn = $request->input('sort', 'created_at');
         $sortDirection = $request->input('direction', 'desc');
         $allowedSortColumns = ['judul_utama', 'kategori', 'view_count', 'created_at', 'tanggal_rilis', 'is_published'];
-        
+
         if (in_array($sortColumn, $allowedSortColumns)) {
             $query->orderBy($sortColumn, $sortDirection === 'asc' ? 'asc' : 'desc');
         } else {
@@ -88,7 +90,11 @@ class BeritaController extends Controller
         $berita = $query->paginate($perPage)->withQueryString();
 
         // Get unique categories for filter dropdown
-        $categories = Berita::distinct()->pluck('kategori')->filter()->values();
+        $categories = Berita::distinct()
+            ->pluck('kategori')
+            ->filter()
+            ->reject(fn ($cat) => strtolower(trim($cat)) === 'kegiatan')
+            ->values();
 
         return Inertia::render('Admin/Berita/Index', [
             'berita' => $berita,
@@ -111,8 +117,12 @@ class BeritaController extends Controller
      */
     public function create(): Response
     {
-        $categories = Berita::distinct()->pluck('kategori')->filter()->values();
-        
+        $categories = Berita::distinct()
+            ->pluck('kategori')
+            ->filter()
+            ->reject(fn ($cat) => strtolower(trim($cat)) === 'kegiatan')
+            ->values();
+
         return Inertia::render('Admin/Berita/Create', [
             'categories' => $categories,
         ]);
@@ -139,7 +149,24 @@ class BeritaController extends Controller
             'lokasi' => 'nullable|string|max:255',
             'tanggal_rilis' => 'nullable|date',
             'biro' => 'nullable|string|max:255',
+            'supporting_images' => 'array|nullable|max:6',
+            'supporting_images.*' => 'string|max:500',
         ]);
+
+        if (isset($validated['supporting_images']) && is_array($validated['supporting_images']) && count($validated['supporting_images']) > 0) {
+            $invalid = [];
+            foreach ($validated['supporting_images'] as $url) {
+                $path = $this->extractStoragePathFromUrl($url);
+                if (!$path || !\App\Models\Media::where('path', $path)->where('mime_type', 'like', 'image/%')->exists()) {
+                    $invalid[] = $url;
+                }
+            }
+            if (!empty($invalid)) {
+                throw ValidationException::withMessages([
+                    'supporting_images' => 'Gambar pendukung harus dipilih dari Media Library (/admin/media).',
+                ]);
+            }
+        }
 
         // Generate unique slug
         $validated['slug'] = SlugGenerator::generateUnique(
@@ -162,13 +189,30 @@ class BeritaController extends Controller
 
         $berita = Berita::create($validated);
 
+        if (isset($validated['supporting_images']) && is_array($validated['supporting_images']) && count($validated['supporting_images']) > 0) {
+            $order = 0;
+            $unique = array_values(array_unique($validated['supporting_images']));
+            foreach ($unique as $url) {
+                \App\Models\GaleriFotoBerita::create([
+                    'berita_id' => $berita->id,
+                    'file_path' => $url,
+                    'file_name' => basename($url),
+                    'caption' => null,
+                    'alt_text' => null,
+                    'urutan' => $order++,
+                    'tipe' => 'gallery',
+                ]);
+            }
+        }
+
         // Log activity
         $this->activityLogger->logCreated($berita);
 
         // Clear berita cache to ensure public pages show updated content
         $this->clearBeritaCache();
 
-        return redirect()->route('admin.berita.index')
+        // IMPORTANT (Inertia + fetch): use 303 after non-GET to avoid the browser re-sending PUT/DELETE on redirect.
+        return redirect()->route('admin.berita.index', [], 303)
             ->with('success', 'Berita berhasil ditambahkan');
     }
 
@@ -183,7 +227,7 @@ class BeritaController extends Controller
         // Clear featured and popular news cache
         Cache::forget('featured_news');
         Cache::forget('popular_news');
-        
+
         // Clear index cache patterns (we can't clear all patterns, but clear common ones)
         // The cache will naturally expire for other patterns
         Cache::forget('berita_index___1');
@@ -242,7 +286,24 @@ class BeritaController extends Controller
             'lokasi' => 'nullable|string|max:255',
             'tanggal_rilis' => 'nullable|date',
             'biro' => 'nullable|string|max:255',
+            'supporting_images' => 'array|nullable|max:6',
+            'supporting_images.*' => 'string|max:500',
         ]);
+
+        if (array_key_exists('supporting_images', $validated) && is_array($validated['supporting_images']) && count($validated['supporting_images']) > 0) {
+            $invalid = [];
+            foreach ($validated['supporting_images'] as $url) {
+                $path = $this->extractStoragePathFromUrl($url);
+                if (!$path || !\App\Models\Media::where('path', $path)->where('mime_type', 'like', 'image/%')->exists()) {
+                    $invalid[] = $url;
+                }
+            }
+            if (!empty($invalid)) {
+                throw ValidationException::withMessages([
+                    'supporting_images' => 'Gambar pendukung harus dipilih dari Media Library (/admin/media).',
+                ]);
+            }
+        }
 
         // Store old values for activity logging
         $oldValues = $berita->getAttributes();
@@ -266,6 +327,23 @@ class BeritaController extends Controller
 
         $berita->update($validated);
 
+        if (array_key_exists('supporting_images', $validated) && is_array($validated['supporting_images'])) {
+            \App\Models\GaleriFotoBerita::where('berita_id', $berita->id)->where('tipe', 'gallery')->delete();
+            $order = 0;
+            $unique = array_values(array_unique($validated['supporting_images']));
+            foreach ($unique as $url) {
+                \App\Models\GaleriFotoBerita::create([
+                    'berita_id' => $berita->id,
+                    'file_path' => $url,
+                    'file_name' => basename($url),
+                    'caption' => null,
+                    'alt_text' => null,
+                    'urutan' => $order++,
+                    'tipe' => 'gallery',
+                ]);
+            }
+        }
+
         // Log activity with changes
         $this->activityLogger->logUpdated($berita, $oldValues);
 
@@ -274,7 +352,8 @@ class BeritaController extends Controller
         Cache::forget("berita_show_{$berita->slug}");
         Cache::forget("berita_related_{$berita->id}");
 
-        return redirect()->route('admin.berita.index')
+        // IMPORTANT (Inertia + fetch): use 303 after non-GET to avoid the browser re-sending PUT/DELETE on redirect.
+        return redirect()->route('admin.berita.index', [], 303)
             ->with('success', 'Berita berhasil diperbarui');
     }
 
@@ -297,7 +376,8 @@ class BeritaController extends Controller
         Cache::forget("berita_show_{$slug}");
         Cache::forget("berita_related_{$id}");
 
-        return redirect()->route('admin.berita.index')
+        // IMPORTANT (Inertia + fetch): use 303 after non-GET to avoid the browser re-sending PUT/DELETE on redirect.
+        return redirect()->route('admin.berita.index', [], 303)
             ->with('success', 'Berita berhasil dihapus');
     }
 
@@ -324,12 +404,12 @@ class BeritaController extends Controller
                 Berita::whereIn('id', $ids)->update(['is_published' => true]);
                 $message = "{$count} berita berhasil dipublish";
                 break;
-                
+
             case 'unpublish':
                 Berita::whereIn('id', $ids)->update(['is_published' => false]);
                 $message = "{$count} berita berhasil di-unpublish";
                 break;
-                
+
             case 'delete':
                 // Log each deletion and collect slugs for cache clearing
                 $beritaItems = Berita::whereIn('id', $ids)->get();
@@ -341,7 +421,7 @@ class BeritaController extends Controller
                 Berita::whereIn('id', $ids)->delete();
                 $message = "{$count} berita berhasil dihapus";
                 break;
-                
+
             default:
                 $message = 'Aksi tidak valid';
         }
@@ -349,7 +429,20 @@ class BeritaController extends Controller
         // Clear berita cache after any bulk action
         $this->clearBeritaCache();
 
-        return redirect()->route('admin.berita.index')
+        // IMPORTANT (Inertia + fetch): use 303 after non-GET to avoid the browser re-sending PUT/DELETE on redirect.
+        return redirect()->route('admin.berita.index', [], 303)
             ->with('success', $message);
+    }
+
+    protected function extractStoragePathFromUrl(string $url): ?string
+    {
+        $path = parse_url($url, PHP_URL_PATH) ?? '';
+        if ($path === '') {
+            return null;
+        }
+        if (str_starts_with($path, '/storage/')) {
+            return substr($path, strlen('/storage/'));
+        }
+        return null;
     }
 }

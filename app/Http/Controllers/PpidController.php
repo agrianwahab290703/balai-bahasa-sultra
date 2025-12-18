@@ -25,23 +25,181 @@ class PpidController extends Controller
     private const CACHE_KEY_DIKECUALIKAN = 'ppid_documents_dikecualikan';
     private const CACHE_TTL = 1800; // 30 minutes
 
+    /**
+     * PPID landing page - displays menu and overview
+     */
+    public function index()
+    {
+        // Get menu items from published content grouped by category
+        $menuItems = Cache::remember('ppid_menu_items', self::CACHE_TTL, function () {
+            return [
+                'profil' => PpidContent::byCategory('profil')
+                    ->published()
+                    ->orderByOrder()
+                    ->get(['id', 'title', 'slug']),
+                'informasi_publik' => [
+                    'berkala' => PpidContent::byCategory('informasi_publik')
+                        ->bySubCategory('berkala')
+                        ->published()
+                        ->orderByOrder()
+                        ->get(['id', 'title', 'slug']),
+                    'serta_merta' => PpidContent::byCategory('informasi_publik')
+                        ->bySubCategory('serta_merta')
+                        ->published()
+                        ->orderByOrder()
+                        ->get(['id', 'title', 'slug']),
+                    'setiap_saat' => PpidContent::byCategory('informasi_publik')
+                        ->bySubCategory('setiap_saat')
+                        ->published()
+                        ->orderByOrder()
+                        ->get(['id', 'title', 'slug']),
+                    'dikecualikan' => PpidContent::byCategory('informasi_publik')
+                        ->bySubCategory('dikecualikan')
+                        ->published()
+                        ->orderByOrder()
+                        ->get(['id', 'title', 'slug']),
+                ],
+                'permohonan' => PpidContent::byCategory('permohonan')
+                    ->published()
+                    ->orderByOrder()
+                    ->get(['id', 'title', 'slug']),
+                'keberatan' => PpidContent::byCategory('keberatan')
+                    ->published()
+                    ->orderByOrder()
+                    ->get(['id', 'title', 'slug']),
+            ];
+        });
+
+        return Inertia::render('Ppid/Index', [
+            'menuItems' => $menuItems,
+            'categories' => PpidContent::CATEGORIES,
+            'subCategories' => PpidContent::SUB_CATEGORIES,
+        ]);
+    }
+
+    /**
+     * Display PPID profil content
+     */
     public function profil()
     {
-        $profile = PpidContent::byType('profile')->active()->orderByOrder()->first();
-        $legalBasis = PpidContent::byType('legal_basis')->active()->orderByOrder()->get();
-        $principles = PpidContent::byType('principle')->active()->orderByOrder()->get();
-        $tasks = PpidContent::byType('task_function')->active()->orderByOrder()->get();
-        $address = PpidContent::byType('address')->active()->orderByOrder()->first();
-        $teamMembers = PpidTeamMember::active()->orderByOrder()->get();
+        // First try new content structure
+        $profilContents = Cache::remember('ppid_profil_contents', self::CACHE_TTL, function () {
+            return PpidContent::byCategory('profil')
+                ->published()
+                ->orderByOrder()
+                ->get();
+        });
+
+        // Fallback to legacy content if no new content exists
+        if ($profilContents->isEmpty()) {
+            $profile = PpidContent::byType('profile')->active()->orderByOrder()->first();
+            $legalBasis = PpidContent::byType('legal_basis')->active()->orderByOrder()->get();
+            $principles = PpidContent::byType('principle')->active()->orderByOrder()->get();
+            $tasks = PpidContent::byType('task_function')->active()->orderByOrder()->get();
+            $address = PpidContent::byType('address')->active()->orderByOrder()->first();
+            $teamMembers = PpidTeamMember::active()->orderByOrder()->get();
+
+            return Inertia::render('Ppid/Profil', [
+                'profile' => $profile,
+                'legalBasis' => $legalBasis,
+                'principles' => $principles,
+                'tasks' => $tasks,
+                'address' => $address,
+                'teamMembers' => $teamMembers,
+                'isLegacy' => true,
+            ]);
+        }
 
         return Inertia::render('Ppid/Profil', [
-            'profile' => $profile,
-            'legalBasis' => $legalBasis,
-            'principles' => $principles,
-            'tasks' => $tasks,
-            'address' => $address,
-            'teamMembers' => $teamMembers,
+            'contents' => $profilContents,
+            'isLegacy' => false,
         ]);
+    }
+
+    /**
+     * Display a specific PPID content by slug
+     */
+    public function showContent($slug)
+    {
+        $content = PpidContent::where('slug', $slug)
+            ->published()
+            ->firstOrFail();
+
+        // Build breadcrumb
+        $breadcrumb = $this->buildBreadcrumb($content);
+
+        // Get related contents in the same category
+        $relatedContents = PpidContent::byCategory($content->category)
+            ->when($content->sub_category, function ($query) use ($content) {
+                return $query->bySubCategory($content->sub_category);
+            })
+            ->published()
+            ->where('id', '!=', $content->id)
+            ->orderByOrder()
+            ->limit(5)
+            ->get(['id', 'title', 'slug']);
+
+        return Inertia::render('Ppid/Show', [
+            'content' => $content,
+            'breadcrumb' => $breadcrumb,
+            'relatedContents' => $relatedContents,
+        ]);
+    }
+
+    /**
+     * Build breadcrumb for PPID content
+     */
+    protected function buildBreadcrumb(PpidContent $content): array
+    {
+        $breadcrumb = [
+            ['label' => 'Home', 'url' => route('home')],
+            ['label' => 'PPID', 'url' => route('ppid.profil')],
+        ];
+
+        // Add category
+        $categoryLabel = PpidContent::CATEGORIES[$content->category] ?? $content->category;
+        $categoryUrl = $this->getCategoryUrl($content->category);
+        $breadcrumb[] = ['label' => $categoryLabel, 'url' => $categoryUrl];
+
+        // Add sub-category if exists
+        if ($content->sub_category) {
+            $subCategoryLabel = PpidContent::SUB_CATEGORIES[$content->sub_category] ?? $content->sub_category;
+            $subCategoryUrl = $this->getSubCategoryUrl($content->sub_category);
+            $breadcrumb[] = ['label' => $subCategoryLabel, 'url' => $subCategoryUrl];
+        }
+
+        // Add current content
+        $breadcrumb[] = ['label' => $content->title, 'url' => null];
+
+        return $breadcrumb;
+    }
+
+    /**
+     * Get URL for a category
+     */
+    protected function getCategoryUrl(string $category): string
+    {
+        return match ($category) {
+            'profil' => route('ppid.profil'),
+            'informasi_publik' => route('ppid.informasi-publik'),
+            'permohonan' => route('ppid.permohonan'),
+            'keberatan' => route('ppid.pengajuan-keberatan'),
+            default => route('ppid.profil'),
+        };
+    }
+
+    /**
+     * Get URL for a sub-category
+     */
+    protected function getSubCategoryUrl(string $subCategory): string
+    {
+        return match ($subCategory) {
+            'setiap_saat' => route('ppid.informasi-publik.setiap-saat'),
+            'serta_merta' => route('ppid.informasi-publik.serta-merta'),
+            'berkala' => route('ppid.informasi-publik.berkala'),
+            'dikecualikan' => route('ppid.informasi-publik.dikecualikan'),
+            default => route('ppid.informasi-publik'),
+        };
     }
 
     /**

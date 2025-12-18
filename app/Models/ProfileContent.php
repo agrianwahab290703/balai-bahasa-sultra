@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileContent extends Model
 {
@@ -23,6 +24,10 @@ class ProfileContent extends Model
         'images' => 'array',
         'metadata' => 'array',
         'is_active' => 'boolean',
+    ];
+
+    protected $appends = [
+        'image_urls',
     ];
 
     /**
@@ -47,5 +52,27 @@ class ProfileContent extends Model
     public static function getVisiMisi()
     {
         return static::byType('visi-misi')->get();
+    }
+
+    /**
+     * Accessor: provide full URLs for stored images while keeping originals intact.
+     */
+    public function getImageUrlsAttribute(): array
+    {
+        if (empty($this->images)) {
+            return [];
+        }
+
+        return collect($this->images)
+            ->filter()
+            ->map(function ($path) {
+                if (str_starts_with($path, 'http')) {
+                    return $path;
+                }
+
+                return Storage::disk('public')->url($path);
+            })
+            ->values()
+            ->all();
     }
 }

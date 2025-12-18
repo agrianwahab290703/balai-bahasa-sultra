@@ -11,6 +11,9 @@ export default defineConfig({
         }),
         react({
             jsxRuntime: 'automatic',
+            babel: {
+                plugins: [],
+            },
         }),
         tailwindcss(),
     ],
@@ -22,22 +25,26 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 5173,
-        strictPort: true,
+        strictPort: false, // Allow fallback port
         open: false,
         https: false, // Explicitly disable HTTPS
         cors: true,
         hmr: {
-            host: '10.10.152.83',
+            host: 'localhost', // Use localhost instead of IP for better compatibility
             port: 5173,
             protocol: 'ws', // Use WebSocket (not WSS)
             clientPort: 5173,
             overlay: true,
         },
         watch: {
-            usePolling: true,
+            usePolling: false, // Disable polling for better performance
             interval: 100,
             ignored: ['!**/node_modules/**', '!**/vendor/**'],
         },
+        fs: {
+            strict: false, // Allow serving files outside project root
+        },
+        timeout: 30000, // Increase timeout to 30 seconds
     },
     esbuild: {
         drop: ['console', 'debugger'],

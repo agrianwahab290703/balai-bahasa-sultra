@@ -46,7 +46,7 @@ const heroSlides = [
         titleHighlight: "Bahasa Indonesia",
         subtitle: "di Bumi Anoa",
         description: "Bersama memajukan bahasa dan sastra Indonesia di Sulawesi Tenggara melalui pembinaan, pengembangan, dan pelindungan yang berkelanjutan.",
-        image: "/images/hero-1.jpg",
+        image: "/images/sejarah1.jpg",
         cta: { text: "Kenali Kami Lebih Dekat", href: "/profil" },
         style: "gradient"
     },
@@ -55,7 +55,7 @@ const heroSlides = [
         titleHighlight: "Gratis",
         subtitle: "untuk Semua",
         description: "Punya pertanyaan tentang ejaan, tata bahasa, atau peristilahan? Tim ahli kami siap membantu tanpa biaya.",
-        image: "/images/hero-2.jpg",
+        image: "/images/sejarah2.jpeg",
         cta: { text: "Tanyakan Sekarang", href: "/layanan/konsultasi" },
         style: "warm"
     },
@@ -64,7 +64,7 @@ const heroSlides = [
         titleHighlight: "Kemampuan",
         subtitle: "Berbahasamu",
         description: "Ikuti pelatihan menulis, jurnalistik, dan workshop sastra bersama praktisi berpengalaman.",
-        image: "/images/hero-3.jpg",
+        image: "/images/sejarah3.webp",
         cta: { text: "Lihat Jadwal Pelatihan", href: "/layanan/pelatihan" },
         style: "fresh"
     },

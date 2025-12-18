@@ -55,6 +55,8 @@ export interface MediaPickerProps {
   accept?: string[];
   /** Title for the modal */
   title?: string;
+  /** Allow uploading new files inside the picker */
+  allowUpload?: boolean;
 }
 
 /**
@@ -100,6 +102,7 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
   multiple = false,
   accept = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
   title = 'Select Media',
+  allowUpload = true,
 }) => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -260,24 +263,26 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
           </div>
 
           {/* Upload button */}
-          <div className="relative">
-            <input
-              type="file"
-              accept={accept.join(',')}
-              onChange={handleFileUpload}
-              multiple={multiple}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              disabled={isUploading}
-            />
-            <Button variant="outline" disabled={isUploading}>
-              {isUploading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4 mr-2" />
-              )}
-              Upload
-            </Button>
-          </div>
+          {allowUpload && (
+            <div className="relative">
+              <input
+                type="file"
+                accept={accept.join(',')}
+                onChange={handleFileUpload}
+                multiple={multiple}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                disabled={isUploading}
+              />
+              <Button variant="outline" disabled={isUploading}>
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-2" />
+                )}
+                Upload
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Error display */}
@@ -297,7 +302,11 @@ export const MediaPicker: React.FC<MediaPickerProps> = ({
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
               <ImageIcon className="h-12 w-12 mb-2" />
               <p>No media found</p>
-              <p className="text-sm">Upload some files to get started</p>
+              {allowUpload ? (
+                <p className="text-sm">Upload some files to get started</p>
+              ) : (
+                <p className="text-sm">Silakan unggah media di halaman /admin/media</p>
+              )}
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-4 gap-4 p-4">

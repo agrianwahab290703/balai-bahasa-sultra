@@ -6,6 +6,8 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
 import { cn } from '@/lib/utils';
 import {
   Bold,
@@ -29,8 +31,16 @@ import {
   Unlink,
   Upload,
   X,
+  ChevronDown,
+  ALargeSmall,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/Components/ui/dropdown-menu';
 
 /**
  * RichTextEditor component props
@@ -157,6 +167,24 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
 
+  // Function to create ordered list with specific class for styling
+  const createOrderedListWithType = useCallback((listClass: string) => {
+    if (!editor) return;
+    
+    // Toggle ordered list and update attributes
+    if (editor.isActive('orderedList')) {
+      // Update existing list's class
+      editor.chain().focus().updateAttributes('orderedList', { 
+        class: listClass 
+      }).run();
+    } else {
+      // Create new list with class
+      editor.chain().focus().toggleOrderedList().updateAttributes('orderedList', {
+        class: listClass
+      }).run();
+    }
+  }, [editor]);
+
   if (!editor) return null;
 
   return (
@@ -234,14 +262,72 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       >
         <List className="h-4 w-4" />
       </ToolbarButton>
+      
+      {/* Basic Numbered List */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
         isActive={editor.isActive('orderedList')}
         disabled={disabled}
-        title="Numbered List"
+        title="Numbered List (1, 2, 3)"
       >
         <ListOrdered className="h-4 w-4" />
       </ToolbarButton>
+
+      {/* List Type Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            title="List Type Options"
+            className={cn(
+              'h-8 px-2 bg-white/80 backdrop-blur-sm border border-gray-200',
+              'hover:bg-blue-50 hover:border-blue-300',
+              'text-gray-600 hover:text-blue-600',
+              'transition-all duration-200',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}
+          >
+            <ALargeSmall className="h-4 w-4" />
+            <ChevronDown className="h-3 w-3 ml-1" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[200px]">
+          <DropdownMenuItem onClick={() => createOrderedListWithType('list-decimal')}>
+            <span className="flex items-center gap-3">
+              <span className="w-8 text-gray-500 font-mono">1.</span>
+              <span>Angka (1, 2, 3)</span>
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => createOrderedListWithType('list-alpha-lower')}>
+            <span className="flex items-center gap-3">
+              <span className="w-8 text-gray-500 font-mono">a.</span>
+              <span>Huruf kecil (a, b, c)</span>
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => createOrderedListWithType('list-alpha-upper')}>
+            <span className="flex items-center gap-3">
+              <span className="w-8 text-gray-500 font-mono">A.</span>
+              <span>Huruf besar (A, B, C)</span>
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => createOrderedListWithType('list-roman-lower')}>
+            <span className="flex items-center gap-3">
+              <span className="w-8 text-gray-500 font-mono">i.</span>
+              <span>Romawi kecil (i, ii, iii)</span>
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => createOrderedListWithType('list-roman-upper')}>
+            <span className="flex items-center gap-3">
+              <span className="w-8 text-gray-500 font-mono">I.</span>
+              <span>Romawi besar (I, II, III)</span>
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
         isActive={editor.isActive('blockquote')}
@@ -362,6 +448,23 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   );
 };
 
+// Custom OrderedList extension with class attribute support
+const CustomOrderedList = OrderedList.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      class: {
+        default: 'list-decimal',
+        parseHTML: element => element.getAttribute('class') || 'list-decimal',
+        renderHTML: attributes => {
+          return {
+            class: attributes.class,
+          };
+        },
+      },
+    };
+  },
+});
 
 /**
  * Rich Text Editor component using TipTap
@@ -369,21 +472,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
  * and image insertion capability.
  * 
  * @see Requirements 12.1, 12.2
- * 
- * @example
- * ```tsx
- * <RichTextEditor
- *   value={content}
- *   onChange={setContent}
- *   placeholder="Enter your content..."
- *   onImageUpload={async (file) => {
- *     const url = await uploadImage(file);
- *     return url;
- *   }}
- *   mediaLibraryEnabled
- *   onMediaLibraryOpen={() => setMediaPickerOpen(true)}
- * />
- * ```
  */
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
@@ -402,6 +490,27 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     StarterKit.configure({
       heading: {
         levels: [1, 2, 3],
+      },
+      bulletList: {
+        HTMLAttributes: {
+          class: 'list-disc pl-6 space-y-1',
+        },
+      },
+      orderedList: false, // Disable default, use custom
+      listItem: {
+        HTMLAttributes: {
+          class: 'pl-1',
+        },
+      },
+      paragraph: {
+        HTMLAttributes: {
+          class: 'mb-3',
+        },
+      },
+    }),
+    CustomOrderedList.configure({
+      HTMLAttributes: {
+        class: 'list-decimal pl-6 space-y-1',
       },
     }),
     Underline,
@@ -440,10 +549,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         class: cn(
           'prose prose-sm sm:prose max-w-none focus:outline-none p-4',
           'prose-headings:font-semibold prose-headings:text-foreground',
-          'prose-p:text-foreground prose-p:leading-relaxed',
+          'prose-p:text-foreground prose-p:leading-relaxed prose-p:mb-3',
           'prose-a:text-primary prose-a:no-underline hover:prose-a:underline',
           'prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground',
-          'prose-ul:list-disc prose-ol:list-decimal',
+          'prose-ul:list-disc prose-ul:pl-6 prose-ul:my-3',
+          'prose-ol:pl-6 prose-ol:my-3',
+          'prose-li:my-1 prose-li:leading-relaxed',
           'prose-img:rounded-lg prose-img:max-w-full'
         ),
       },

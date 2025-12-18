@@ -143,8 +143,30 @@ class GalleryController extends Controller
         $validated['is_featured'] = $validated['is_featured'] ?? false;
         $validated['is_active'] = $validated['is_active'] ?? true;
         
+        // Set name field - use title if available, otherwise generate from title
+        $validated['name'] = $validated['title'];
+        
+        // Generate slug from title
+        $validated['slug'] = \Illuminate\Support\Str::slug($validated['title']);
+        
+        // Set user_id to system user (ID 4) for gallery ownership
+        $validated['user_id'] = 4; // System user for gallery ownership
+        
         // Set sort_order to be last
         $validated['sort_order'] = Gallery::max('sort_order') + 1;
+        
+        // Normalize image path: store relative path under public/storage (e.g., "uploads/filename.png")
+        if (isset($validated['image'])) {
+            $img = ltrim($validated['image'], '/');
+            if ($img === '') {
+                unset($validated['image']);
+            } elseif (!str_starts_with($img, 'http')) {
+                if (str_starts_with($img, 'storage/')) {
+                    $img = substr($img, strlen('storage/'));
+                }
+                $validated['image'] = $img;
+            }
+        }
 
         $gallery = Gallery::create($validated);
 
@@ -216,6 +238,28 @@ class GalleryController extends Controller
             return back()->withErrors([
                 'is_featured' => 'Maksimal ' . Gallery::MAX_FEATURED_ITEMS . ' item dapat ditandai sebagai featured.',
             ])->withInput();
+        }
+
+        // Set name field - use title if available
+        $validated['name'] = $validated['title'];
+        
+        // Generate slug from title
+        $validated['slug'] = \Illuminate\Support\Str::slug($validated['title']);
+        
+        // Set user_id to system user (ID 4) for gallery ownership
+        $validated['user_id'] = 4; // System user for gallery ownership
+        
+        // Normalize image path on update
+        if (isset($validated['image'])) {
+            $img = ltrim($validated['image'], '/');
+            if ($img === '') {
+                unset($validated['image']);
+            } elseif (!str_starts_with($img, 'http')) {
+                if (str_starts_with($img, 'storage/')) {
+                    $img = substr($img, strlen('storage/'));
+                }
+                $validated['image'] = $img;
+            }
         }
 
         // Store old values for activity logging

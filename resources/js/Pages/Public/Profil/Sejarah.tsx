@@ -34,6 +34,20 @@ interface SejarahProps {
     sections: SejarahSection[];
 }
 
+// Helper function to get correct image URL
+const getImageUrl = (path: string | null | undefined): string => {
+    if (!path) return '';
+    // If already a full URL, return as is
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    // Laravel storage links to /storage, so we need to add /storage prefix
+    if (path.startsWith('storage/')) return `/${path}`;
+    if (path.startsWith('/storage/')) return path;
+    // If starts with / already and it's not storage, return as is
+    if (path.startsWith('/')) return path;
+    // Otherwise, add /storage/ prefix for Laravel's storage system
+    return `/storage/${path}`;
+};
+
 // Timeline milestones for visual interest
 const milestones = [
     { year: 1997, event: 'HPBI Sultra mempelopori pembentukan' },
@@ -116,157 +130,141 @@ export default function Sejarah({ sections }: SejarahProps) {
             <section className="bg-gradient-to-b from-white to-gray-50 py-12 lg:py-16">
                 <div className="container mx-auto px-4">
                     <div className="max-w-5xl mx-auto">
-                        {/* Opening Image Gallery */}
-                        <div className="mb-10">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="md:col-span-2 relative group overflow-hidden rounded-2xl shadow-xl">
-                                    <img 
-                                        src="/images/sejarah1.jpg" 
-                                        alt="Peresmian Kantor Bahasa Sulawesi Tenggara"
-                                        className="w-full h-72 md:h-96 object-cover transition-transform duration-500 group-hover:scale-105"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                                        <Badge className="bg-yellow-400 text-gray-900 mb-2">
-                                            <Calendar className="w-3 h-3 mr-1" /> 5 Juni 2004
-                                        </Badge>
-                                        <h3 className="text-white text-xl font-semibold">Peresmian Kantor Bahasa</h3>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-4">
-                                    <div className="relative group overflow-hidden rounded-2xl shadow-lg flex-1">
-                                        <img 
-                                            src="/images/sejarah2.jpeg" 
-                                            alt="Gedung Kantor Bahasa Saat Ini"
-                                            className="w-full h-full min-h-44 object-cover transition-transform duration-500 group-hover:scale-105"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                                            <p className="text-white text-sm font-medium">Gedung Saat Ini</p>
-                                        </div>
-                                    </div>
-                                    <div className="relative group overflow-hidden rounded-2xl shadow-lg flex-1">
-                                        <img 
-                                            src="/images/sejarah3.webp" 
-                                            alt="Kegiatan Kantor Bahasa"
-                                            className="w-full h-full min-h-44 object-cover transition-transform duration-500 group-hover:scale-105"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                                            <p className="text-white text-sm font-medium">Dokumentasi Kegiatan</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* History Sections */}
-                        <div className="space-y-8">
+                        {/* History Sections - Dynamic layout based on content and images */}
+                        <div className="space-y-12">
                             {sections.map((section, index) => (
-                                <article 
-                                    key={section.id} 
-                                    className={`relative ${index % 2 === 0 ? '' : 'lg:flex-row-reverse'}`}
+                                <article
+                                    key={section.id}
+                                    className={`relative flex flex-col ${index % 2 === 1 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-8 lg:gap-12`}
                                 >
                                     {/* Section number indicator */}
-                                    <div className="absolute -left-4 lg:-left-12 top-0 hidden lg:flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-bold text-sm shadow-lg">
+                                    <div className="absolute -left-4 lg:-left-12 top-0 hidden lg:flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full font-bold text-sm shadow-lg z-10">
                                         {index + 1}
                                     </div>
 
-                                    <Card className="border-0 shadow-lg overflow-hidden bg-white hover:shadow-xl transition-shadow duration-300">
-                                        <CardContent className="p-0">
-                                            {/* Content with optional side image */}
-                                            <div className={`flex flex-col ${section.images && section.images.length > 0 ? 'lg:flex-row' : ''} ${index % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
-                                                {/* Image - only if section has images */}
-                                                {section.images && section.images.length > 0 && (
-                                                    <div className="lg:w-2/5 shrink-0">
-                                                        <div className="relative h-56 lg:h-full">
-                                                            <img 
-                                                                src={section.images[0]} 
-                                                                alt={section.title}
-                                                                className="absolute inset-0 w-full h-full object-cover"
-                                                            />
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                                                            {section.metadata?.year && (
-                                                                <div className="absolute top-4 left-4">
-                                                                    <Badge className="bg-yellow-400 text-gray-900 font-bold">
-                                                                        {section.metadata.year}
-                                                                    </Badge>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                    {/* Images Section - Show if section has images */}
+                                    {section.images && section.images.length > 0 && (
+                                        <div className="lg:w-5/12">
+                                            <div className="grid gap-4">
+                                                {/* Main Image */}
+                                                {section.images[0] && (
+                                                    <div className="relative group overflow-hidden rounded-2xl shadow-xl">
+                                                        <img
+                                                            src={getImageUrl(section.images[0])}
+                                                            alt={section.title}
+                                                            className="w-full h-64 lg:h-80 object-cover transition-transform duration-500 group-hover:scale-105"
+                                                            onError={(e) => {
+                                                                const img = e.target as HTMLImageElement;
+                                                                img.classList.add('opacity-50');
+                                                            }}
+                                                        />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                                                        {section.metadata?.year && (
+                                                            <div className="absolute top-4 left-4">
+                                                                <Badge className="bg-yellow-400 text-gray-900 font-bold">
+                                                                    {section.metadata.year}
+                                                                </Badge>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
-
-                                                {/* Content */}
-                                                <div className="flex-1">
-                                                    <div className="p-6 lg:p-8">
-                                                        {/* Year badge for sections without images */}
-                                                        {(!section.images || section.images.length === 0) && section.metadata?.year && (
-                                                            <Badge className="bg-yellow-400 text-gray-900 font-bold mb-4">
-                                                                {section.metadata.year}
-                                                            </Badge>
-                                                        )}
-                                                        <div className="flex items-start gap-4 mb-4">
-                                                            <div className="shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                                                                {index === 0 && <Milestone className="w-6 h-6 text-white" />}
-                                                                {index === 1 && <Building className="w-6 h-6 text-white" />}
-                                                                {index === 2 && <Users className="w-6 h-6 text-white" />}
-                                                                {index === 3 && <MapPin className="w-6 h-6 text-white" />}
-                                                                {index > 3 && <History className="w-6 h-6 text-white" />}
+                                                {/* Additional Images Grid */}
+                                                {section.images.length > 1 && (
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        {section.images.slice(1, 5).map((image, imgIndex) => (
+                                                            <div key={imgIndex} className="relative group overflow-hidden rounded-xl shadow-lg">
+                                                                <img
+                                                                    src={getImageUrl(image)}
+                                                                    alt={`${section.title} ${imgIndex + 2}`}
+                                                                    className="w-full h-32 object-cover transition-transform duration-500 group-hover:scale-105"
+                                                                    onError={(e) => {
+                                                                        const img = e.target as HTMLImageElement;
+                                                                        img.classList.add('opacity-50');
+                                                                    }}
+                                                                />
+                                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
                                                             </div>
-                                                            <div>
-                                                                <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                                                                    {section.title}
-                                                                </h2>
-                                                                {section.metadata?.highlight && (
-                                                                    <p className="text-sm text-blue-600 font-medium">
-                                                                        {section.metadata.highlight}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {/* Show more indicator */}
+                                                {section.images.length > 5 && (
+                                                    <div className="text-center">
+                                                        <p className="text-sm text-gray-500">
+                                                            +{section.images.length - 5} foto lainnya
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
 
-                                                        <div className="prose prose-gray max-w-none">
-                                                            {section.content.split('\n\n').map((paragraph, pIndex) => (
-                                                                <p 
-                                                                    key={pIndex} 
-                                                                    className="text-gray-600 leading-relaxed mb-4 last:mb-0"
-                                                                >
-                                                                    {paragraph}
-                                                                </p>
-                                                            ))}
-                                                        </div>
+                                    {/* Content Section */}
+                                    <div className={`${section.images && section.images.length > 0 ? 'lg:w-7/12' : 'w-full'}`}>
+                                        <Card className="border-0 shadow-lg overflow-hidden bg-white hover:shadow-xl transition-shadow duration-300 h-full">
+                                            <CardContent className="p-6 lg:p-8">
+                                                {/* Year badge for sections without images */}
+                                                {(!section.images || section.images.length === 0) && section.metadata?.year && (
+                                                    <Badge className="bg-yellow-400 text-gray-900 font-bold mb-4">
+                                                        {section.metadata.year}
+                                                    </Badge>
+                                                )}
 
-                                                        {/* Leaders list if available */}
-                                                        {section.metadata?.leaders && (
-                                                            <div className="mt-6 pt-4 border-t border-gray-100">
-                                                                <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                                                    <Users className="w-4 h-4 text-blue-600" />
-                                                                    Daftar Kepala Kantor
-                                                                </h3>
-                                                                <div className="grid sm:grid-cols-2 gap-2">
-                                                                    {section.metadata.leaders.map((leader, lIndex) => (
-                                                                        <div 
-                                                                            key={lIndex}
-                                                                            className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors"
-                                                                        >
-                                                                            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0">
-                                                                                {lIndex + 1}
-                                                                            </div>
-                                                                            <div>
-                                                                                <p className="font-medium text-gray-900 text-xs">{leader.name}</p>
-                                                                                <p className="text-xs text-gray-500">{leader.period}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
+                                                <div className="flex items-start gap-4 mb-6">
+                                                    <div className="shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                                                        {index === 0 && <Milestone className="w-6 h-6 text-white" />}
+                                                        {index === 1 && <Building className="w-6 h-6 text-white" />}
+                                                        {index === 2 && <Users className="w-6 h-6 text-white" />}
+                                                        {index === 3 && <MapPin className="w-6 h-6 text-white" />}
+                                                        {index > 3 && <History className="w-6 h-6 text-white" />}
+                                                    </div>
+                                                    <div>
+                                                        <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+                                                            {section.title}
+                                                        </h2>
+                                                        {section.metadata?.highlight && (
+                                                            <p className="text-sm text-blue-600 font-medium">
+                                                                {section.metadata.highlight}
+                                                            </p>
                                                         )}
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+
+                                                <div className="prose prose-gray max-w-none">
+                                                    <div
+                                                        dangerouslySetInnerHTML={{ __html: section.content }}
+                                                        className="text-gray-600 leading-relaxed text-lg"
+                                                    />
+                                                </div>
+
+                                                {/* Leaders list if available */}
+                                                {section.metadata?.leaders && (
+                                                    <div className="mt-8 pt-6 border-t border-gray-100">
+                                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                                            <Users className="w-5 h-5 text-blue-600" />
+                                                            Daftar Kepala Kantor
+                                                        </h3>
+                                                        <div className="grid sm:grid-cols-2 gap-3">
+                                                            {section.metadata.leaders.map((leader, lIndex) => (
+                                                                <div
+                                                                    key={lIndex}
+                                                                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors"
+                                                                >
+                                                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
+                                                                        {lIndex + 1}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-semibold text-gray-900">{leader.name}</p>
+                                                                        <p className="text-sm text-gray-600">{leader.period}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </div>
                                 </article>
                             ))}
                         </div>

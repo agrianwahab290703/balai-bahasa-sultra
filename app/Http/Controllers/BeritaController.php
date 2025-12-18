@@ -43,22 +43,66 @@ class BeritaController extends Controller
                 $query->byCategory($category);
             }
 
-            return $query->orderBy('created_at', 'desc')
+            $paginated = $query->orderBy('created_at', 'desc')
                 ->paginate(12)
                 ->withQueryString();
+
+            // Transform data to include formatted dates
+            $paginated->getCollection()->transform(function ($item) {
+                $heroPhoto = $item->galeriFotoBerita->where('tipe', 'hero')->first()
+                    ?? $item->galeriFotoBerita->first();
+
+                return [
+                    'id' => $item->id,
+                    'judul_utama' => $item->judul_utama,
+                    'slug' => $item->slug,
+                    'ringkasan_inti' => $item->ringkasan_inti,
+                    'hero_image' => $item->hero_image ? asset($item->hero_image) : ($heroPhoto ? asset($heroPhoto->file_path) : null),
+                    'tanggal_rilis' => $item->tanggal_rilis ? $item->tanggal_rilis->locale('id')->translatedFormat('d F Y') : null,
+                    'view_count' => $item->view_count ?? 0,
+                    'kategori' => $item->kategori,
+                    'created_at' => $item->created_at->toISOString(),
+                ];
+            });
+
+            return $paginated;
         });
 
         // Get categories for filter - sementara kosongkan karena method belum ada
         $categories = [];
 
-        // Get featured news
+        // Get featured news with formatted data
         $featuredNews = Cache::remember('featured_news', 1800, function () {
-            return Berita::getFeatured(3);
+            return Berita::getFeatured(3)->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'judul_utama' => $item->judul_utama,
+                    'slug' => $item->slug,
+                    'ringkasan_inti' => $item->ringkasan_inti,
+                    'hero_image' => $item->hero_image ? asset($item->hero_image) : null,
+                    'tanggal_rilis' => $item->tanggal_rilis ? $item->tanggal_rilis->locale('id')->translatedFormat('d F Y') : null,
+                    'view_count' => $item->view_count ?? 0,
+                    'kategori' => $item->kategori,
+                    'created_at' => $item->created_at->toISOString(),
+                ];
+            });
         });
 
-        // Get popular news
+        // Get popular news with formatted data
         $popularNews = Cache::remember('popular_news', 1800, function () {
-            return Berita::getPopular(5);
+            return Berita::getPopular(5)->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'judul_utama' => $item->judul_utama,
+                    'slug' => $item->slug,
+                    'ringkasan_inti' => $item->ringkasan_inti,
+                    'hero_image' => $item->hero_image ? asset($item->hero_image) : null,
+                    'tanggal_rilis' => $item->tanggal_rilis ? $item->tanggal_rilis->locale('id')->translatedFormat('d F Y') : null,
+                    'view_count' => $item->view_count ?? 0,
+                    'kategori' => $item->kategori,
+                    'created_at' => $item->created_at->toISOString(),
+                ];
+            });
         });
 
         return Inertia::render('Public/Berita/Index', [
@@ -102,16 +146,17 @@ class BeritaController extends Controller
             return $berita->relatedNews;
         });
 
-        // Prepare gallery data
+        // Prepare gallery data - use consistent keys with frontend component
         $galeri = $berita->galeriFotoBerita->map(function ($foto) {
             return [
                 'id' => $foto->id,
                 'berita_id' => $foto->berita_id,
-                'path_gambar' => $foto->file_path,
+                'file_path' => $foto->file_path ? asset($foto->file_path) : null,
+                'file_name' => $foto->file_name ?? basename($foto->file_path ?? ''),
                 'caption' => $foto->caption,
                 'alt_text' => $foto->alt_text,
                 'urutan' => $foto->urutan,
-                'tipe_gambar' => $foto->tipe,
+                'tipe' => $foto->tipe,
             ];
         })->sortBy('urutan')->values();
 

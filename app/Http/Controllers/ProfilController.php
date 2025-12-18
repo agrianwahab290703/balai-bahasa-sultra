@@ -15,7 +15,7 @@ class ProfilController extends Controller
     public function sejarah()
     {
         $sejarahSections = ProfileContent::getSejarah();
-        
+
         return Inertia::render('Public/Profil/Sejarah', [
             'sections' => $sejarahSections,
         ]);
@@ -24,7 +24,7 @@ class ProfilController extends Controller
     public function kedudukan()
     {
         $kedudukanSections = ProfileContent::byType('kedudukan')->get();
-        
+
         return Inertia::render('Public/Profil/Kedudukan', [
             'sections' => $kedudukanSections,
         ]);
@@ -33,7 +33,7 @@ class ProfilController extends Controller
     public function visiMisi()
     {
         $visiMisiSections = ProfileContent::byType('visi-misi')->get();
-        
+
         return Inertia::render('Public/Profil/VisiMisi', [
             'sections' => $visiMisiSections,
         ]);
@@ -41,8 +41,10 @@ class ProfilController extends Controller
 
     public function struktur()
     {
+        $strukturSections = ProfileContent::byType('struktur')->get();
+
         return Inertia::render('Public/Profil/Struktur', [
-            'imageUrl' => '/images/struktur-organisasi.png',
+            'sections' => $strukturSections,
         ]);
     }
 }

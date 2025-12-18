@@ -32,6 +32,11 @@ interface Berita {
   tags: string[] | null;
   meta_title: string | null;
   meta_description: string | null;
+  galeri_foto_berita?: {
+    id: number;
+    file_path: string;
+    tipe: string;
+  }[];
 }
 
 interface Props {

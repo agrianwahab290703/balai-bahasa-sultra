@@ -11,6 +11,28 @@ use Illuminate\Support\Str;
 
 class PengumumanService
 {
+    /**
+     * Generate unique slug for pengumuman
+     */
+    protected function generateUniqueSlug(string $title, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($title);
+        $slug = $base;
+        $counter = 2;
+
+        while (
+            Pengumuman::withTrashed()
+                ->where('slug', $slug)
+                ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $slug = $base . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+
     public function getAll(array $filters = []): LengthAwarePaginator
     {
         $query = Pengumuman::with(['creator', 'updater']);
@@ -62,14 +84,29 @@ class PengumumanService
         DB::beginTransaction();
 
         try {
-            $data['slug'] = Str::slug($data['judul']);
+            $data['slug'] = $this->generateUniqueSlug($data['judul']);
             $data['created_by'] = Auth::guard('admin')->id();
+
+            // Ensure gallery_images is properly handled
+            if (!isset($data['gallery_images'])) {
+                $data['gallery_images'] = [];
+            }
 
             $pengumuman = Pengumuman::create($data);
 
             DB::commit();
 
             return $pengumuman;
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            DB::rollBack();
+
+            // Extract the duplicate key information from the error message
+            if (preg_match("/Duplicate entry '(.+?)' for key/", $e->getMessage(), $matches)) {
+                $duplicateSlug = $matches[1];
+                throw new \Exception("Judul pengumuman ini sudah digunakan. Silakan gunakan judul yang berbeda atau tambahkan identifier unik.");
+            }
+
+            throw new \Exception("Terjadi kesalahan saat membuat pengumuman. Judul mungkin sudah digunakan.");
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
@@ -84,7 +121,7 @@ class PengumumanService
             $pengumuman = Pengumuman::findOrFail($id);
 
             if (isset($data['judul'])) {
-                $data['slug'] = Str::slug($data['judul']);
+                $data['slug'] = $this->generateUniqueSlug($data['judul'], $id);
             }
 
             $data['updated_by'] = Auth::guard('admin')->id();
@@ -137,6 +174,9 @@ class PengumumanService
                     $pengumuman->update(['status' => 'active']);
                     break;
                 case 'unpublish':
+                    $pengumuman->update(['status' => 'draft']);
+                    break;
+                case 'draft':
                     $pengumuman->update(['status' => 'draft']);
                     break;
                 case 'delete':

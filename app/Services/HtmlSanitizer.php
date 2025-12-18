@@ -55,6 +55,9 @@ class HtmlSanitizer
         'table' => ['border', 'cellpadding', 'cellspacing'],
         'th' => ['colspan', 'rowspan', 'scope'],
         'td' => ['colspan', 'rowspan'],
+        'ol' => ['type', 'start'],
+        'ul' => ['type'],
+        'li' => ['value'],
     ];
 
     /**
@@ -134,6 +137,10 @@ class HtmlSanitizer
 
         // Step 4: Final cleanup of any remaining dangerous content
         $html = self::finalCleanup($html);
+
+        // Step 5: If the content has no block-level tags, convert line breaks to paragraphs
+        // This helps preserve the user's "enter" formatting from the editor.
+        $html = self::ensureParagraphs($html);
 
         return trim($html);
     }
@@ -316,6 +323,31 @@ class HtmlSanitizer
         $html = str_replace("\0", '', $html);
         
         return $html;
+    }
+
+    /**
+     * Ensure plain text with line breaks is converted into paragraphs.
+     * If the HTML already contains common block tags, it is left untouched.
+     */
+    protected static function ensureParagraphs(string $html): string
+    {
+        // If there are already block-level tags, assume formatting is present.
+        if (preg_match('/<(p|ul|ol|li|h[1-6]|blockquote|pre|table|figure)\b/i', $html)) {
+            return $html;
+        }
+
+        // Split on line breaks and wrap each non-empty line in <p>.
+        $lines = preg_split("/\r\n|\n|\r/", $html);
+        if (!$lines) {
+            return $html;
+        }
+
+        $paragraphs = array_filter(array_map('trim', $lines), fn ($line) => $line !== '');
+        if (empty($paragraphs)) {
+            return $html;
+        }
+
+        return '<p>' . implode('</p><p>', $paragraphs) . '</p>';
     }
 
     /**

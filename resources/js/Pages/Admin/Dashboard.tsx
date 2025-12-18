@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Clock,
   AlertCircle,
+  Bell,
 } from 'lucide-react'
 import {
   File01Icon,
@@ -862,6 +863,36 @@ export default function Dashboard({
             </button>
 
             <button
+              onClick={() => router.visit('/admin/pengumuman/create')}
+              className="group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:scale-105 hover-glow"
+              style={{
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.15)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)'
+                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'
+                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.15)'
+              }}
+            >
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300" style={{
+                background: 'linear-gradient(135deg, #ef4444, #f97316)',
+                boxShadow: '0 8px 24px rgba(239, 68, 68, 0.3)',
+              }}>
+                <Bell className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-bold text-base" style={{ color: '#ef4444' }}>Tambah Pengumuman</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--admin-black-text)', opacity: 0.6 }}>Sampaikan informasi penting</p>
+              </div>
+            </button>
+
+            <button
               onClick={() => router.visit('/admin/gallery/create')}
               className="group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:scale-105 hover-glow"
               style={{
@@ -918,36 +949,6 @@ export default function Dashboard({
               <div className="text-left flex-1">
                 <p className="font-bold text-base" style={{ color: '#8b5cf6' }}>Tambah PPID</p>
                 <p className="text-xs mt-1" style={{ color: 'var(--admin-black-text)', opacity: 0.6 }}>Dokumen publik</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => router.visit('/admin/settings')}
-              className="group flex items-center gap-4 p-5 rounded-2xl transition-all duration-300 hover:scale-105 hover-glow"
-              style={{
-                background: 'rgba(107, 114, 128, 0.08)',
-                border: '1px solid rgba(107, 114, 128, 0.15)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(107, 114, 128, 0.12)'
-                e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.25)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(107, 114, 128, 0.08)'
-                e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.15)'
-              }}
-            >
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-300" style={{
-                background: 'linear-gradient(135deg, #6b7280, #9ca3af)',
-                boxShadow: '0 8px 24px rgba(107, 114, 128, 0.3)',
-              }}>
-                <Settings01Icon className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-bold text-base" style={{ color: '#6b7280' }}>Pengaturan</p>
-                <p className="text-xs mt-1" style={{ color: 'var(--admin-black-text)', opacity: 0.6 }}>Konfigurasi sistem</p>
               </div>
             </button>
           </div>

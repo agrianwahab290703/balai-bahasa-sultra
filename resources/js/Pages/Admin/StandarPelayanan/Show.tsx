@@ -4,33 +4,34 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { ArrowLeft, Pencil, Trash2, Download, FileText, Calendar } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Download, Link2, FileText } from 'lucide-react';
 
 interface StandarPelayananDocument {
   id: number;
   title: string;
   description: string;
-  category: string;
-  url: string;
-  file_type: string;
-  file_size: number;
-  file_size_formatted: string;
+  url: string | null;
   file_url: string | null;
+  file_type: string | null;
+  file_size: number | null;
+  file_size_formatted: string;
   download_count: number;
   sort_order: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  document_type: 'file' | 'link';
+  source_label: string;
+  external_url: string | null;
 }
 
 interface Props {
   document: StandarPelayananDocument;
-  categories: string[];
 }
 
-export default function Show({ document, categories }: Props) {
+export default function Show({ document }: Props) {
   const handleDelete = () => {
-    if (confirm('Hapus dokumen ini? Aksi ini tidak dapat dibatalkan.')) {
+    if (confirm('Hapus dokumen ini? Aksi tidak dapat dibatalkan.')) {
       router.delete(route('admin.standar-pelayanan.destroy', document.id));
     }
   };
@@ -40,7 +41,7 @@ export default function Show({ document, categories }: Props) {
       <Head title={document.title} />
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
               <Link href={route('admin.standar-pelayanan.index')}>
@@ -49,7 +50,7 @@ export default function Show({ document, categories }: Props) {
             </Button>
             <div>
               <h1 className="text-2xl font-semibold">{document.title}</h1>
-              <p className="text-muted-foreground">Detail dokumen Standar Pelayanan</p>
+              <p className="text-muted-foreground">Detail dokumen standar pelayanan</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -67,127 +68,109 @@ export default function Show({ document, categories }: Props) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>Informasi Dokumen</CardTitle>
+                <CardTitle>Informasi Umum</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={document.is_active ? 'default' : 'secondary'}>
+                    {document.is_active ? 'Aktif' : 'Nonaktif'}
+                  </Badge>
+                  <Badge variant="outline">{document.source_label}</Badge>
+                  {document.document_type === 'file' && document.file_type && (
+                    <Badge variant="outline">{document.file_type.toUpperCase()}</Badge>
+                  )}
+                </div>
+
+                {document.description && (
+                  <p className="text-muted-foreground leading-relaxed">{document.description}</p>
+                )}
+
+                <div className="grid gap-4 sm:grid-cols-2 text-sm">
                   <div>
-                    <p className="text-sm text-muted-foreground">Judul</p>
-                    <p className="font-medium">{document.title}</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Dibuat</p>
+                    <p className="font-medium text-foreground">
+                      {new Date(document.created_at).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Kategori</p>
-                    <Badge variant="outline" className="mt-1">
-                      {document.category}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge variant={document.is_active ? 'default' : 'secondary'} className="mt-1">
-                      {document.is_active ? 'Aktif' : 'Nonaktif'}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Tipe File</p>
-                    <p className="font-medium uppercase">{document.file_type}</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Diperbarui</p>
+                    <p className="font-medium text-foreground">
+                      {new Date(document.updated_at).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </p>
                   </div>
                 </div>
-                {document.description && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Deskripsi</p>
-                    <p className="mt-1">{document.description}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Sumber Dokumen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {document.document_type === 'file' ? (
+                  <div className="rounded-lg border p-4 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <span className="rounded-full bg-primary/10 p-2 text-primary">
+                        <FileText className="h-4 w-4" />
+                      </span>
+                      Disimpan di server
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {document.file_type?.toUpperCase() ?? 'N/A'} • {document.file_size_formatted}
+                    </p>
+                    {document.file_url && (
+                      <Button variant="outline" className="w-fit mt-2" asChild>
+                        <a href={route('admin.standar-pelayanan.download', document.id)} target="_blank" rel="noreferrer">
+                          <Download className="h-4 w-4 mr-2" />
+                          Unduh File
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border p-4 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 font-semibold text-primary">
+                      <Link2 className="h-4 w-4" />
+                      Tautan Eksternal
+                    </div>
+                    <a
+                      href={document.external_url ?? document.file_url ?? document.url ?? '#'}
+                      className="break-all text-sm text-primary"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {document.external_url ?? document.url}
+                    </a>
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>File</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-background rounded-lg">
-                      <FileText className="h-8 w-8 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{document.title}.{document.file_type}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {document.file_size_formatted}
-                      </p>
-                    </div>
-                  </div>
-                  {document.file_url && (
-                    <Button asChild>
-                      <a href={route('admin.standar-pelayanan.download', document.id)} target="_blank">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Statistik</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-muted rounded">
-                    <Download className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{document.download_count}</p>
-                    <p className="text-sm text-muted-foreground">Total Download</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Informasi Waktu</CardTitle>
-              </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Dibuat</p>
-                    <p className="font-medium">
-                      {new Date(document.created_at).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Total Unduhan</p>
+                  <p className="text-3xl font-bold text-foreground">{document.download_count}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Terakhir Diperbarui</p>
-                    <p className="font-medium">
-                      {new Date(document.updated_at).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
+                  <p className="text-lg font-semibold text-foreground">{document.is_active ? 'Aktif' : 'Nonaktif'}</p>
                 </div>
               </CardContent>
             </Card>

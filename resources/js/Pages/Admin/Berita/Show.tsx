@@ -28,6 +28,12 @@ interface Berita {
   lokasi: string | null;
   tanggal_rilis: string | null;
   created_at: string;
+  galeri_foto_berita?: {
+    id: number;
+    file_path: string;
+    tipe: string;
+    caption?: string;
+  }[];
 }
 
 interface Props {
@@ -129,6 +135,26 @@ export default function Show({ berita }: Props) {
             )}
             {berita.kesimpulan_komitmen && (
               <ContentSection title="Kesimpulan & Komitmen" content={berita.kesimpulan_komitmen} />
+            )}
+
+            {/* Galeri Foto */}
+            {berita.galeri_foto_berita && berita.galeri_foto_berita.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="font-semibold mb-3">Galeri Foto</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {berita.galeri_foto_berita
+                    .filter((img) => img.tipe === 'gallery')
+                    .map((img) => (
+                      <div key={img.id} className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={img.file_path}
+                          alt={img.caption || 'Galeri foto'}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                </div>
+              </div>
             )}
           </div>
 

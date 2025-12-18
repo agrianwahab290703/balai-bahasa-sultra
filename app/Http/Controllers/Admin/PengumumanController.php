@@ -41,12 +41,20 @@ class PengumumanController extends Controller
             'status' => 'required|in:draft,active',
             'prioritas' => 'nullable|integer|min:0|max:10',
             'meta_description' => 'nullable|string|max:255',
+            'gallery_images' => 'array|nullable|max:6',
+            'gallery_images.*' => 'string',
         ]);
 
-        $this->pengumumanService->create($validated);
-        
-        return redirect()->route('admin.pengumuman.index')
-                    ->with('success', 'Pengumuman berhasil ditambahkan');
+        try {
+            $this->pengumumanService->create($validated);
+
+            return redirect()->route('admin.pengumuman.index')
+                        ->with('success', 'Pengumuman berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['judul' => $e->getMessage()]);
+        }
     }
 
     public function show(Pengumuman $pengumuman)
@@ -69,6 +77,8 @@ class PengumumanController extends Controller
             'status' => 'required|in:draft,active,expired',
             'prioritas' => 'nullable|integer|min:0|max:10',
             'meta_description' => 'nullable|string|max:255',
+            'gallery_images' => 'array|nullable|max:6',
+            'gallery_images.*' => 'string',
         ]);
 
         $this->pengumumanService->update($pengumuman->id, $validated);
@@ -88,7 +98,7 @@ class PengumumanController extends Controller
     public function bulkAction(Request $request)
     {
         $validated = $request->validate([
-            'action' => 'required|in:publish,unpublish,delete',
+            'action' => 'required|in:publish,unpublish,draft,delete',
             'pengumuman_ids' => 'required|array',
             'pengumuman_ids.*' => 'exists:pengumuman,id',
         ]);
@@ -96,8 +106,9 @@ class PengumumanController extends Controller
         $this->pengumumanService->bulkAction($validated['pengumuman_ids'], $validated['action']);
 
         $messages = [
-            'publish' => 'Pengumuman berhasil dipublish',
+            'publish' => 'Pengumuman berhasil dipublikasi',
             'unpublish' => 'Pengumuman berhasil diunpublish',
+            'draft' => 'Pengumuman berhasil dijadikan draft',
             'delete' => 'Pengumuman berhasil dihapus',
         ];
         $message = $messages[$validated['action']];

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Button } from '@/Components/ui/button';
@@ -13,29 +13,66 @@ import {
   SelectValue,
 } from '@/Components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { ArrowLeft, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload, X, Image as ImageIcon, Users } from 'lucide-react';
 import RichTextEditor from '@/Components/Admin/RichTextEditor';
 
 interface Props {
   contentTypes: Record<string, string>;
   allowedImageTypes: string[];
+  nextOrders?: Record<string, number>;
 }
 
-export default function Create({ contentTypes, allowedImageTypes }: Props) {
+export default function Create({ contentTypes, allowedImageTypes, nextOrders = {} }: Props) {
   const [previewImages, setPreviewImages] = useState<string[]>([]);
-  
+  const [leaders, setLeaders] = useState<Array<{name: string; period: string}>>([]);
+
   const { data, setData, post, processing, errors, progress } = useForm({
     type: '',
     title: '',
     content: '',
     images: [] as File[],
+    year: '',
+    highlight: '',
+    leaders: [] as Array<{name: string; period: string}>,
     order: 0,
     is_active: true,
   });
 
+  const isContentOptional = data.type === 'struktur';
+
+  // Update order when type changes to show next available position
+  useEffect(() => {
+    if (data.type && nextOrders[data.type] !== undefined) {
+      setData('order', nextOrders[data.type]);
+    }
+  }, [data.type]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prepare metadata object
+    const metadata: any = {};
+    if (data.year) metadata.year = parseInt(data.year);
+    if (data.highlight) metadata.highlight = data.highlight;
+    if (leaders.length > 0) metadata.leaders = leaders;
+
+    const formData = new FormData();
+    formData.append('type', data.type);
+    formData.append('title', data.title);
+    formData.append('content', data.content);
+    formData.append('order', data.order.toString());
+    formData.append('is_active', data.is_active ? '1' : '0');
+
+    // Add images
+    data.images.forEach((image, index) => {
+      formData.append(`images[${index}]`, image);
+    });
+
+    // Add metadata as JSON
+    formData.append('metadata', JSON.stringify(metadata));
+
     post(route('admin.profile-content.store'), {
+      data: formData,
       forceFormData: true,
     });
   };
@@ -62,6 +99,9 @@ export default function Create({ contentTypes, allowedImageTypes }: Props) {
     newPreviews.splice(index, 1);
     setPreviewImages(newPreviews);
   };
+
+  // Get current type's item count for display
+  const currentTypeCount = data.type ? (nextOrders[data.type] ?? 0) : 0;
 
   return (
     <AdminLayout>
@@ -148,7 +188,7 @@ export default function Create({ contentTypes, allowedImageTypes }: Props) {
                       {Object.entries(contentTypes).map(([value, label]) => (
                         value && value.trim() !== '' ? (
                           <SelectItem key={value} value={value} className="py-3">
-                            {label}
+                            {label} {nextOrders[value] !== undefined && `(${nextOrders[value]} item)`}
                           </SelectItem>
                         ) : null
                       ))}
@@ -182,9 +222,48 @@ export default function Create({ contentTypes, allowedImageTypes }: Props) {
                   )}
                 </div>
 
+                {/* Additional Fields for Sejarah */}
+                {data.type === 'sejarah' && (
+                  <>
+                    <div className="space-y-4">
+                      <Label htmlFor="year" className="text-base font-semibold text-gray-700 flex items-center gap-2">
+                        Tahun Kejadian
+                        <div className="w-1 h-1 bg-blue-500 rounded-full" />
+                      </Label>
+                      <Input
+                        id="year"
+                        type="number"
+                        value={data.year}
+                        onChange={(e) => setData('year', e.target.value)}
+                        placeholder="Contoh: 2004"
+                        className="h-12 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 rounded-2xl text-base placeholder-gray-400"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label htmlFor="highlight" className="text-base font-semibold text-gray-700 flex items-center gap-2">
+                        Highlight/Deskripsi Singkat
+                        <div className="w-1 h-1 bg-blue-500 rounded-full" />
+                      </Label>
+                      <Input
+                        id="highlight"
+                        value={data.highlight}
+                        onChange={(e) => setData('highlight', e.target.value)}
+                        placeholder="Contoh: Peresmian Kantor Bahasa Sulawesi Tenggara"
+                        className="h-12 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-300 rounded-2xl text-base placeholder-gray-400"
+                      />
+                    </div>
+                  </>
+                )}
+
                 <div className="space-y-4">
                   <Label htmlFor="content" className="text-base font-semibold text-gray-700 flex items-center gap-2">
-                    Konten <span className="text-red-500 ml-1">*</span>
+                    Konten
+                    {isContentOptional ? (
+                      <span className="text-sm font-normal text-gray-400">(Opsional untuk Struktur Organisasi)</span>
+                    ) : (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
                     <div className="w-1 h-1 bg-blue-500 rounded-full" />
                   </Label>
                   <div className="bg-white/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl overflow-hidden shadow-inner">
@@ -196,6 +275,11 @@ export default function Create({ contentTypes, allowedImageTypes }: Props) {
                       className="border-0 bg-transparent"
                     />
                   </div>
+                  {isContentOptional && (
+                    <p className="text-sm text-gray-500">
+                      Anda dapat melewati bagian ini jika struktur hanya membutuhkan gambar atau bagan.
+                    </p>
+                  )}
                   {errors.content && (
                     <div className="flex items-center gap-2 p-3 bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-xl">
                       <div className="w-4 h-4 rounded-full bg-red-500 animate-pulse" />
@@ -203,6 +287,64 @@ export default function Create({ contentTypes, allowedImageTypes }: Props) {
                     </div>
                   )}
                 </div>
+
+                {/* Leaders Section for Sejarah */}
+                {data.type === 'sejarah' && (
+                  <>
+                    <div className="bg-gradient-to-r from-amber-50 to-transparent p-4 rounded-2xl">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <Users className="w-5 h-5" />
+                        Daftar Kepala Kantor (Opsional)
+                      </h3>
+                      <div className="space-y-3">
+                        {leaders.map((leader, index) => (
+                          <div key={index} className="flex gap-3">
+                            <Input
+                              value={leader.name}
+                              onChange={(e) => {
+                                const newLeaders = [...leaders];
+                                newLeaders[index].name = e.target.value;
+                                setLeaders(newLeaders);
+                              }}
+                              placeholder="Nama kepala kantor"
+                              className="bg-white/80 backdrop-blur-sm"
+                            />
+                            <Input
+                              value={leader.period}
+                              onChange={(e) => {
+                                const newLeaders = [...leaders];
+                                newLeaders[index].period = e.target.value;
+                                setLeaders(newLeaders);
+                              }}
+                              placeholder="Masa jabatan"
+                              className="bg-white/80 backdrop-blur-sm"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newLeaders = leaders.filter((_, i) => i !== index);
+                                setLeaders(newLeaders);
+                              }}
+                              className="text-red-500 hover:text-red-600"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setLeaders([...leaders, { name: '', period: '' }])}
+                          className="w-full"
+                        >
+                          Tambah Kepala Kantor
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -374,15 +516,22 @@ export default function Create({ contentTypes, allowedImageTypes }: Props) {
                     id="order"
                     type="number"
                     min="0"
+                    max={currentTypeCount}
                     value={data.order}
                     onChange={(e) => setData('order', parseInt(e.target.value) || 0)}
                     placeholder="0"
                     className="h-12 bg-white/80 backdrop-blur-sm border-2 border-gray-200 hover:border-yellow-400 focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 transition-all duration-300 rounded-2xl text-base text-center font-bold"
                   />
-                  <div className="mt-3 p-3 bg-yellow-100/80 backdrop-blur-sm rounded-xl">
+                  <div className="mt-3 p-3 bg-yellow-100/80 backdrop-blur-sm rounded-xl space-y-1">
                     <p className="text-xs text-yellow-800 font-medium">
                       📌 Angka lebih kecil = tampil lebih awal (0 = pertama)
                     </p>
+                    {data.type && (
+                      <p className="text-xs text-yellow-700">
+                        💡 Tipe "{contentTypes[data.type]}" memiliki {currentTypeCount} item. 
+                        Urutan {data.order} berarti posisi ke-{data.order + 1}.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

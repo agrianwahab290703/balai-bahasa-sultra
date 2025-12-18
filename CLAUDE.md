@@ -4,285 +4,180 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Laravel 12 + Inertia.js + React website for Balai Bahasa Kemendikdasmen Sulawesi Tenggara (Language Center). The application serves as a government institution website with features for news, services, galleries, PPID (public information), and various government program documentation (ZI-WBK, SAKIP).
+This is a Laravel + React Inertia.js web application for Balai Bahasa Sulawesi Tenggara (Language Development Center of Southeast Sulawesi). The application serves as a government website with both public-facing content and an admin panel for content management.
 
-**Tech Stack:**
-- **Backend:** Laravel 12 (PHP 8.2+), Eloquent ORM, Laravel Fortify (authentication), Spatie Permissions
-- **Frontend:** React 19, Inertia.js 2.x, TypeScript
-- **UI Framework:** Tailwind CSS 4.0, Shadcn UI (Radix primitives), Hugeicons React
-- **Build Tool:** Vite 7.x
-- **Testing:** PHPUnit (backend), Vitest + Testing Library (frontend)
-- **Forms:** React Hook Form + Zod validation
+### Tech Stack
 
-## Development Commands
+- **Backend**: Laravel 12.0, PHP 8.2+
+- **Frontend**: React 19.2, TypeScript, Tailwind CSS 4.0
+- **Admin UI**: Custom components using Radix UI primitives, Lucide & HugeIcons React
+- **Rich Text**: TipTap editor for content management
+- **Authentication**: Laravel Fortify + custom admin authentication
+- **File Management**: Custom media library with Intervention Image
+- **Permissions**: Spatie Laravel Permission package
 
-### Initial Setup
+## Key Architecture
+
+### Frontend Structure
+
+- **Entry Points**:
+  - `resources/js/app.tsx` - Main React application entry
+  - `resources/css/app.css` - Tailwind CSS with custom design tokens
+
+- **Components Organization**:
+  - `resources/js/Components/` - Reusable components (UI, Admin, Public)
+  - `resources/js/Layouts/` - Layout templates (AdminLayout, PublicLayout)
+  - `resources/js/Pages/` - Inertia.js page components organized by route
+
+- **Admin Panel Features**:
+  - Glassmorphism design system with cultural Indonesian icons
+  - Rich text editor with image upload capabilities
+  - Media library with bulk operations
+  - Drag-and-drop sortable galleries
+  - Activity logging and user management
+
+### Backend Structure
+
+- **Controllers**: Organized by feature (Admin, Public)
+  - `App/Http/Controllers/Admin/` - Admin panel controllers
+  - `App/Http/Controllers/` - Public-facing controllers
+
+- **Models**: Eloquent models with proper relationships
+  - `Berita` - News articles with view tracking
+  - `Gallery` - Photo galleries with ordering
+  - `Pengumuman` - Announcements with supporting images
+  - `StandarPelayanan` - Service standards with document downloads
+  - `ProfileContent` - Profile pages with ordering
+  - `AdminUser` - Admin users with role-based permissions
+
+- **Middleware**:
+  - `AdminAuthMiddleware` - Admin authentication guard
+  - `HandleInertiaRequests` - Inertia.js data sharing
+  - Custom CSRF and validation middleware
+
+- **Services**:
+  - `MediaService` - File upload and management
+  - `HtmlSanitizer` - Content sanitization
+  - `PengumumanService` - Business logic for announcements
+  - `SlugGenerator` - URL slug generation
+
+### Key Features
+
+1. **Admin Authentication**: Separate admin guard with role-based access (admin, super_admin)
+2. **Media Management**: Centralized media library with automatic image optimization
+3. **Content Management**: Full CRUD for news, galleries, announcements, and standards
+4. **Public Frontend**: Clean, responsive public website with SEO-friendly URLs
+5. **Activity Logging**: Track all admin actions for audit purposes
+6. **Bulk Operations**: Efficient bulk editing and deletion capabilities
+
+## Common Development Commands
+
+### Backend Development
+
 ```bash
-composer setup  # Runs composer install, creates .env, generates key, migrates DB, npm install & build
+# Start Laravel development server with all services
+composer run dev
+
+# Start only Laravel server
+php artisan serve
+
+# Run database migrations
+php artisan migrate
+
+# Fresh database with seeding
+php artisan migrate:fresh --seed
+
+# Create new migration
+php artisan make:migration create_table_name
+
+# Run tests
+php artisan test
+
+# Clear caches
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
 ```
 
-### Development Workflow
+### Frontend Development
+
 ```bash
-# Full development stack (recommended)
-composer dev    # Runs: php artisan serve + queue:listen + pail (logs) + npm run dev
-                # Uses concurrently to run all services with color-coded output
+# Install dependencies
+npm install
 
-# Alternative: separate terminals
-php artisan serve                # Start Laravel server (http://localhost:8000)
-npm run dev                      # Start Vite dev server (port 5173)
-php artisan queue:listen         # Process background jobs
-php artisan pail                 # Watch logs
+# Start Vite dev server
+npm run dev
+
+# Build for production
+npm run build
+
+# Build with memory optimization
+npm run build:memory
+
+# Watch for changes and rebuild
+npm run build:watch
+
+# Development with mobile support
+npm run dev:mobile
+
+# Run tests
+npm run test
+
+# Test in UI mode
+npm run test:ui
+
+# Clean build artifacts
+npm run clean
 ```
 
-### Mobile Development
+### Full Stack Development
+
 ```bash
-npm run dev:mobile              # Vite with --host --port 5174
-npm run sync:mobile             # Build + dev:mobile
-npm run dev:all                 # Run both dev and dev:mobile
+# Run both backend and frontend concurrently
+npm run dev:all
+
+# Sync files between platforms (if needed)
+npm run sync:platforms
 ```
 
-### Build & Deployment
-```bash
-npm run build                   # Standard production build
-npm run build:prod              # Production build with mode flag
-npm run build:memory            # Build with increased Node memory (4GB)
-npm run build:watch             # Build in watch mode
-composer run-script build       # Not defined, use npm run build
-```
+## File Upload & Media Handling
 
-### Testing
-```bash
-# Backend (PHPUnit)
-composer test                   # Clears config + runs tests
-php artisan test                # Direct test run
-php artisan test --filter TestName  # Run specific test
+- **Upload Path**: `public/storage/uploads/`
+- **Allowed Formats**: Images (jpg, jpeg, png, gif, webp), Documents (pdf, doc, docx)
+- **Image Processing**: Auto-resize with Intervention Image
+- **Storage**: Public disk with organized folder structure
 
-# Frontend (Vitest)
-npm test                        # Run tests in watch mode
-npm run test:run                # Run tests once (CI mode)
-npm run test:ui                 # Open Vitest UI
-```
+## Testing
 
-### Code Quality
-```bash
-php artisan pint                # Laravel Pint (code formatting)
-```
+- **PHP Tests**: PHPUnit in `tests/` directory
+- **JavaScript Tests**: Vitest with React Testing Library
+- **Test Configuration**: `phpunit.xml`, `vitest.config.ts`
 
-### Database
-```bash
-php artisan migrate             # Run migrations
-php artisan migrate:fresh --seed  # Fresh DB with seeders
-php artisan db:seed             # Run seeders only
-```
+## Development Notes
 
-## Architecture & Code Organization
+1. **Code Style**: Follow PSR-12 for PHP, use TypeScript for frontend
+2. **Routing**: Separate route files for public (`web.php`) and admin (`web_admin.php`)
+3. **Security**: All admin routes protected by authentication middleware
+4. **Performance**: Eager loading relationships, optimized queries, and image caching
+5. **Accessibility**: Semantic HTML, ARIA labels, keyboard navigation support
 
-### Backend Architecture
+## Database Seeding
 
-**Service Layer Pattern:**
-The application uses a service layer to separate business logic from controllers. Key services:
-- `NewsService` - News/berita CRUD and queries
-- `ActivityService` - Activities/kegiatan management
-- `ServiceService` - Public services (layanan)
-- `VisitorService` - Analytics tracking
+Default admin credentials (check database seeders):
+- Username: `admin@example.com`
+- Password: `password` (change in production)
 
-Controllers should be thin, delegating to services:
-```php
-// app/Http/Controllers/BeritaController.php
-public function index(Request $request)
-{
-    $berita = $this->newsService->getAll($filters);
-    return Inertia::render('Public/Berita/Index', ['berita' => $berita]);
-}
-```
+## AI Agent Integration
 
-**Models with Translation Support:**
-Many models (`News`, `Activity`, `Service`) use a translation pattern with separate `*Translation` models:
-- Primary model (e.g., `News`) contains shared fields: slug, images, status
-- Translation model (e.g., `NewsTranslation`) contains locale-specific content: title, content, excerpt
-- Use `byLocale()` scope to filter translations
-- Services handle transaction-wrapped creation/updates of both models
+The project includes several custom AI agent configurations and scripts for enhanced development workflow:
+- Located in `.claude/agents/` and `.skills/` directories
+- Custom MCP server integrations for web scraping and content analysis
+- Specialized agents for debugging, validation, and autonomous development
 
-**Image Management:**
-News and Activities have dedicated `*Image` models for galleries:
-- `NewsImage` - Additional images for news articles
-- `ActivityImage` - Gallery images for activities
-- `featured_image` is stored directly on parent model
-- Images have `sort_order` for manual ordering
+## Media Gallery Features
 
-### Frontend Architecture
-
-**Inertia.js Page Resolution:**
-- Pages in `resources/js/Pages/**/*.tsx` (excludes test files)
-- Route name maps to file path: `berita.index` → `Public/Berita/Index.tsx`
-- All pages receive shared data from `HandleInertiaRequests` middleware
-
-**Layout System:**
-- `PublicLayout` (`resources/js/Layouts/PublicLayout.tsx`) - Main public-facing layout
-  - Includes Header, Footer, and sets page title with "Balai Bahasa Sultra" suffix
-  - Adds 28px/36px top padding for fixed header
-- Future admin layouts will go in same directory
-
-**Component Organization:**
-```
-resources/js/
-├── Components/
-│   ├── ui/              # Shadcn UI components (button, card, dialog, etc.)
-│   ├── Public/          # Public website components (Header, Footer)
-│   ├── Ppid/            # PPID-specific components (MultiStepForm, etc.)
-│   └── StandarPelayanan/  # Document management components
-├── Pages/
-│   └── Public/          # All public pages organized by feature
-├── Layouts/             # Layout components
-├── hooks/               # Custom React hooks (useDeviceDetection, usePermohonanForm)
-├── schemas/             # Zod validation schemas
-├── types/               # TypeScript type definitions
-└── lib/                 # Utilities (utils.ts with cn() helper)
-```
-
-**UI Component Standards:**
-- ALWAYS use Shadcn UI components from `@/Components/ui/` - never create custom components if Shadcn equivalent exists
-- ALWAYS use Hugeicons React for icons - search available icons before assuming names
-- Use `cn()` utility from `@/lib/utils` for conditional className merging
-- Prefer Tailwind utility classes over custom CSS
-
-**Form Handling:**
-- Use React Hook Form + Zod for all forms
-- Create schemas in `resources/js/schemas/`
-- Create custom hooks for complex forms (see `usePermohonanForm`, `useKeberatanForm`)
-- Multi-step forms use custom components (see `MultiStepForm`, `KeberatanMultiStepForm`)
-
-### Path Alias
-
-Both Vite and Vitest use `@` alias for `resources/js/`:
-```typescript
-import { Button } from '@/Components/ui/button'
-import { PublicLayout } from '@/Layouts/PublicLayout'
-```
-
-### Route Organization
-
-Routes are organized by feature in `routes/web.php`:
-- Public routes (no auth): Homepage, News, Services, Profile, Contact
-- PPID routes: Public information, document requests, objections
-- ZI-WBK routes: Integrity zone documentation (6 main areas, multiple sub-pages each)
-- SAKIP routes: Government performance accountability
-- Terbitan routes: Publications (magazines, books, research)
-
-All routes use named routes (e.g., `route('berita.show', ['slug' => $slug])`).
-
-### Database Conventions
-
-- Uses SQLite by default (see `.env.example`)
-- Migrations in chronological order with date prefixes
-- Translation tables follow pattern: `{model}s` + `{model}_translations`
-- Soft deletes used on `berita` table
-- Many tables have `categories` as JSON column for flexibility
-- View tracking through `content_views` table
-- Visitor analytics in `visitors` table
-
-### Vite Configuration
-
-**Build Optimization:**
-- Manual chunks split vendor code: `vendor`, `inertia`, `ui`, `forms`, `animation`, `utils`, `icons`
-- Terser minification with `drop_console` and `drop_debugger`
-- 1500KB chunk size warning limit
-
-**Development Server:**
-- Configured for network access on local IP (10.10.152.83)
-- Uses polling for file watching (WSL compatibility)
-- WebSocket HMR on port 5173
-- CORS enabled
-
-## Project-Specific Rules (from AGENTS.md)
-
-### The Holy Trinity
-Every feature must maintain synchronization between:
-1. **UI (Visual)** - React components with Shadcn UI
-2. **Logic (Backend)** - Laravel controllers + services
-3. **Data (DB)** - Migrations with proper constraints
-
-### Database is Single Source of Truth
-- Always use unique constraints and foreign keys in migrations
-- Never rely solely on application-level validation for data integrity
-- Use database transactions in services for multi-model operations
-
-### UI Component Priority
-1. Check if Shadcn UI component exists before creating custom
-2. Use Hugeicons React - search icon names, don't guess
-3. Never hardcode CSS if Tailwind utility exists
-4. Maintain mobile responsiveness (the app targets both desktop and mobile)
-
-### Code Completeness
-- NEVER use placeholders like `// ... rest of code`
-- Always write complete implementations
-- Don't truncate code in responses
-
-### Before Making Changes
-- Check `package.json` and `composer.json` for available dependencies
-- Use `read_file` before `replace` to ensure exact context
-- Verify import paths match alias configuration
-
-### MCP Tools Reference (from AGENTS.md)
-This project expects use of MCP tools for:
-- **Investigation:** `codebase_investigator`, `glob`, `list_directory`
-- **Knowledge:** `exa` for technical docs, `google_web_search`
-- **UI:** `shadcn-ui` component lookup, `hugeicons` icon search
-- **Execution:** `run_shell_command`, `browser_eval` for verification
-
-## Special Features & Patterns
-
-### Multi-Step Forms
-See `usePermohonanForm` and `MultiStepForm` for pattern:
-- Step state management with validation per step
-- Progress indicators
-- Form data persistence across steps
-- Final submission via Inertia post
-
-### Document Management
-See `StandarPelayanan` components for pattern:
-- Document filtering, preview, download
-- Skeleton loading states
-- Floating action buttons
-- Document cards with metadata
-
-### Device Detection
-Use `useDeviceDetection` hook for responsive behavior:
-```typescript
-const { isMobile, isTablet, isDesktop } = useDeviceDetection()
-```
-
-### File Sync Scripts
-The project has custom file watcher and build process scripts:
-- `scripts/file-watcher.js` - Real-time sync watcher
-- `scripts/build-process.js` - Platform build validation
-- `scripts/sync-validator.js` - Full/quick sync testing
-
-## Testing Patterns
-
-### Frontend Testing (Vitest)
-- Use Testing Library queries (getByRole, getByText)
-- Test accessibility with jest-axe
-- Mock Inertia router with custom setup
-- See `resources/js/Pages/Ppid/Permohonan.test.tsx` for example
-
-### Backend Testing (PHPUnit)
-- Feature tests for HTTP endpoints
-- Use factories for test data
-- Database transactions for test isolation
-
-## Common Pitfalls
-
-1. **Don't start dev servers automatically** - Always ask user first
-2. **Check HMR host in vite.config.js** - Currently set to specific IP, may need adjustment
-3. **Translation models** - Remember to eager load with `with(['translations'])`
-4. **Image paths** - Use `featured_image_url` accessor for proper URL generation
-5. **Inertia responses** - Always return `Inertia::render()` not `view()`
-6. **TypeScript paths** - Use `@/` not relative paths for better refactoring
-
-## Git Workflow
-
-- Follow Conventional Commits specification
-- Current branch: `feature/ppid-profil-ux-enhancement`
-- Main branch not configured (verify before creating PRs)
-- ALWAYS commit after completing a task
+- **Sortable Items**: Drag-and-drop reordering with @dnd-kit
+- **Bulk Operations**: Select multiple items for batch actions
+- **Featured Status**: Toggle featured status for galleries
+- **Image Optimization**: Automatic resizing on upload
+- **Lazy Loading**: Optimized image display with blur effects

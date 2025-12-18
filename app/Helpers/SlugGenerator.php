@@ -67,7 +67,21 @@ class SlugGenerator
         ?int $excludeId = null,
         string $slugColumn = 'slug'
     ): bool {
-        $query = $modelClass::where($slugColumn, $slug);
+        // Start query, including soft deleted records if model uses SoftDeletes trait
+        // Check if the model uses the SoftDeletes trait by looking for the method
+        // Note: withTrashed() is a static method on the model class when using SoftDeletes trait
+        $query = null;
+        
+        // First try to call withTrashed() statically on the model class
+        // This works if the model uses the SoftDeletes trait
+        try {
+            $query = $modelClass::withTrashed();
+        } catch (\BadMethodCallException $e) {
+            // Model doesn't have withTrashed method, use normal query
+            $query = $modelClass::query();
+        }
+        
+        $query->where($slugColumn, $slug);
 
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);

@@ -55,23 +55,28 @@ class Gallery extends Model
         if (!$this->image) {
             return null;
         }
-        
-        if (str_starts_with($this->image, 'http')) {
-            return $this->image;
+        $img = ltrim($this->image, '/');
+        if (str_starts_with($img, 'http')) {
+            return $img;
         }
-        
-        return asset('storage/' . $this->image);
+        if (str_starts_with($img, 'storage/')) {
+            $img = substr($img, strlen('storage/'));
+        }
+        return asset('storage/' . $img);
     }
 
     public function getThumbnailUrlAttribute(): ?string
     {
         if ($this->thumbnail) {
-            if (str_starts_with($this->thumbnail, 'http')) {
-                return $this->thumbnail;
+            $thumb = ltrim($this->thumbnail, '/');
+            if (str_starts_with($thumb, 'http')) {
+                return $thumb;
             }
-            return asset('storage/' . $this->thumbnail);
+            if (str_starts_with($thumb, 'storage/')) {
+                $thumb = substr($thumb, strlen('storage/'));
+            }
+            return asset('storage/' . $thumb);
         }
-        
         return $this->image_url;
     }
 

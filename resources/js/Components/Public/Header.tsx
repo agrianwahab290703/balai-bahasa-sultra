@@ -33,20 +33,12 @@ const layananItems = [
     { title: 'Pelatihan', href: '/layanan/pelatihan' },
 ];
 
-const produkItems = [
-    { title: 'Publikasi', href: '/produk/publikasi' },
-    { title: 'Buku', href: '/produk/buku' },
-    { title: 'Jurnal', href: '/produk/jurnal' },
-];
-
 const galeriItems = [
     { title: 'Foto', href: '/galeri' },
-    { title: 'Video', href: '/galeri/video' },
 ];
 
 const informasiMenuItems = [
     ...informasiItems,
-    ...produkItems,
     ...galeriItems,
 ];
 

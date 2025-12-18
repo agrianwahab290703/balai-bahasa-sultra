@@ -193,11 +193,16 @@ export default function BeritaShow({ berita, galeri = [], beritaTerkait = [] }: 
         window.print();
     };
 
-    // Helper for image URLs
-    const getImageUrl = (url: string) => {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
+    // Helper for image URLs - handles various URL formats
+    const getImageUrl = (url: string | null | undefined): string => {
+        if (!url || url.trim() === '') return '';
+        // If already a full URL, return as-is
+        if (url.startsWith('http://') || url.startsWith('https://')) return url;
+        // If starts with /, return as-is
         if (url.startsWith('/')) return url;
+        // If starts with storage/, add leading slash
+        if (url.startsWith('storage/')) return `/${url}`;
+        // Otherwise, assume it needs a leading slash
         return `/${url}`;
     };
 
@@ -385,10 +390,10 @@ export default function BeritaShow({ berita, galeri = [], beritaTerkait = [] }: 
                                             variant="outline"
                                             size="icon"
                                             onClick={handleCopyLink}
-                                            className={`w-12 h-12 rounded-full transition-all border-2 ${
+                                            className={`w-12 h-12 rounded-full transition-all border-2 text-gray-700 ${
                                                 copied
                                                     ? 'bg-green-100 text-green-600 border-green-400'
-                                                    : 'bg-white hover:bg-gray-50 border-gray-300'
+                                                    : 'bg-white hover:bg-gray-100 border-gray-300'
                                             }`}
                                             title={copied ? "Tersalin!" : "Salin Link"}
                                         >
@@ -399,7 +404,7 @@ export default function BeritaShow({ berita, galeri = [], beritaTerkait = [] }: 
                                             variant="outline"
                                             size="icon"
                                             onClick={handlePrint}
-                                            className="w-12 h-12 rounded-full bg-white hover:bg-gray-50 border-2 border-gray-300 transition-all"
+                                            className="w-12 h-12 rounded-full bg-white hover:bg-gray-100 border-2 border-gray-300 text-gray-700 transition-all"
                                             title="Cetak Artikel"
                                         >
                                             <Printer className="w-5 h-5" />
@@ -423,24 +428,7 @@ export default function BeritaShow({ berita, galeri = [], beritaTerkait = [] }: 
                                 <Card className="border-0 shadow-0 bg-transparent">
                                     <CardContent className="p-0">
                                         <div
-                                            className="prose prose-lg max-w-none font-serif
-                                                prose-headings:font-sans prose-headings:font-bold prose-headings:text-gray-900 prose-headings:mb-4 prose-headings:mt-8
-                                                prose-h1:text-3xl prose-h1:mt-0
-                                                prose-h2:text-2xl
-                                                prose-h3:text-xl
-                                                prose-p:text-gray-700 prose-p:leading-8 prose-p:mb-6 prose-p:text-lg
-                                                prose-a:text-blue-600 prose-a:font-medium prose-a:no-underline hover:prose-a:underline prose-a:transition-colors
-                                                prose-img:rounded-2xl prose-img:shadow-xl prose-img:my-8 prose-img:border prose-img:border-gray-200
-                                                prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-gradient-to-r prose-blockquote:from-blue-50 prose-blockquote:to-transparent prose-blockquote:py-6 prose-blockquote:px-6 prose-blockquote:rounded-lg prose-blockquote:not-italic prose-blockquote:text-gray-700
-                                                prose-strong:text-gray-900 prose-strong:font-semibold
-                                                prose-em:text-blue-600
-                                                prose-ul:text-gray-700 prose-ul:space-y-2 prose-ul:list-disc
-                                                prose-ol:text-gray-700 prose-ol:space-y-2 prose-ol:list-decimal
-                                                prose-li:text-lg prose-li:leading-7
-                                                prose-li:marker:text-blue-600 prose-li:marker:font-bold
-                                                prose-code:bg-gray-100 prose-code:text-pink-600 prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:text-sm prose-code:font-mono
-                                                prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-6 prose-pre:rounded-xl prose-pre:overflow-x-auto
-                                                prose-hr:border-gray-200 prose-hr:my-12"
+                                            className="article-content font-serif text-gray-800"
                                             dangerouslySetInnerHTML={{ __html: berita.content || '<p class="text-center text-gray-500 py-8">Konten artikel sedang dimuat...</p>' }}
                                         />
 
@@ -500,10 +488,10 @@ export default function BeritaShow({ berita, galeri = [], beritaTerkait = [] }: 
                                                 </Button>
                                                 <Button
                                                     onClick={handleCopyLink}
-                                                    className={`gap-3 py-4 font-medium border-2 ${
+                                                    className={`gap-3 py-4 font-medium border-2 text-gray-700 ${
                                                         copied
                                                             ? 'bg-green-100 text-green-600 border-green-400'
-                                                            : 'bg-white hover:bg-gray-50 border-gray-300'
+                                                            : 'bg-white hover:bg-gray-100 border-gray-300'
                                                     }`}
                                                 >
                                                     {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}

@@ -20,6 +20,7 @@ export interface QuickAction {
  */
 export const QUICK_ACTION_ROUTES: Record<string, string> = {
   'Tambah Berita': '/admin/berita/create',
+  'Tambah Pengumuman': '/admin/pengumuman/create',
   'Upload Foto': '/admin/gallery/create',
   'Tambah Dokumen PPID': '/admin/ppid/create',
   'Tambah FAQ': '/admin/ssd/create',
@@ -31,6 +32,7 @@ export const QUICK_ACTION_ROUTES: Record<string, string> = {
  */
 export const QUICK_ACTIONS: QuickAction[] = [
   { label: 'Tambah Berita', href: '/admin/berita/create', group: 'content-creation' },
+  { label: 'Tambah Pengumuman', href: '/admin/pengumuman/create', group: 'content-creation' },
   { label: 'Upload Foto', href: '/admin/gallery/create', group: 'content-creation' },
   { label: 'Tambah Dokumen PPID', href: '/admin/ppid/create', group: 'content-creation' },
   { label: 'Tambah FAQ', href: '/admin/ssd/create', group: 'management-tools' },
